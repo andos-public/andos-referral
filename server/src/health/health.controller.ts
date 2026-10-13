@@ -23,7 +23,7 @@ export class HealthController {
       status: db ? 'ok' : 'degraded',
       db,
       uptimeSeconds: Math.round(process.uptime()),
-      version: '0.1.0',
+      version: '0.2.0',
     };
   }
 }
