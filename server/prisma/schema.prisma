@@ -1,0 +1,489 @@
+// Andos Referral — Phase 1 schema
+//
+// Source of truth: PHASE_1_SCHEMA.sql (approved design draft) — this file is a 1:1 port.
+//   • Namespace: Postgres schema `referral_app` (multiSchema preview).
+//   • Money is always integer minor units (INR paise) — never floating point.
+//   • CHECK constraints and functional/partial indexes from the draft DDL cannot be
+//     expressed in Prisma — they are appended to the initial SQL migration and are
+//     part of the reviewed migration history. Keep them.
+//   • Nothing here encodes still-open product decisions (7-day hold anchor, refund
+//     policy, attribution cardinality, payout operations).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["referral_app"]
+}
+
+// ─────────────────────────────── enums ───────────────────────────────
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  CLOSED
+
+  @@schema("referral_app")
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+
+  @@schema("referral_app")
+}
+
+enum AttributionStatus {
+  ATTRIBUTED
+  ACTIVE
+  DISQUALIFIED
+
+  @@schema("referral_app")
+}
+
+enum LinkEventType {
+  CLICK
+  REFERRAL_ATTRIBUTED
+  CONVERSION
+
+  @@schema("referral_app")
+}
+
+enum ChatAccessState {
+  LOCKED
+  UNLOCKED
+
+  @@schema("referral_app")
+}
+
+enum RewardRuleMatchType {
+  DEFAULT
+  PROMO_CODE
+
+  @@schema("referral_app")
+}
+
+enum OrderEventType {
+  ORDER_COMPLETED
+  ORDER_CANCELLED
+  ORDER_REFUNDED
+
+  @@schema("referral_app")
+}
+
+enum RewardEligibility {
+  ELIGIBLE
+  HOLD
+  INELIGIBLE
+
+  @@schema("referral_app")
+}
+
+enum PayoutMethodType {
+  UPI
+  BANK
+
+  @@schema("referral_app")
+}
+
+enum PayoutRequestStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+
+  @@schema("referral_app")
+}
+
+enum PayoutRequestEventType {
+  REQUESTED
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+
+  @@schema("referral_app")
+}
+
+enum LedgerTransactionType {
+  COMMISSION_LOCKED
+  COMMISSION_RELEASE
+  COMMISSION_REVERSAL
+  WITHDRAWAL_RESERVATION
+  WITHDRAWAL_RELEASE
+  WITHDRAWAL_COMPLETION
+
+  @@schema("referral_app")
+}
+
+enum LedgerBucket {
+  PENDING
+  AVAILABLE
+  RESERVED
+  WITHDRAWN
+
+  @@schema("referral_app")
+}
+
+// ─────────────────────────────── models ───────────────────────────────
+
+// Minimal local identity reference. If authentication is owned by the main app/IdP,
+// store only its stable opaque subject here; never mirror credentials.
+model User {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  externalSubject String?       @unique @map("external_subject")
+  username        String?
+  displayName     String?       @map("display_name")
+  accountStatus   AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  referralCodes          ReferralCode[]           @relation("ReferralCodeOwner")
+  attributionsAsReferred ReferralAttribution[]    @relation("ReferredUser")
+  walletAccounts         WalletAccount[]
+  payoutMethods          PayoutMethod[]
+  payoutReviews          PayoutRequest[]          @relation("PayoutReviewer")
+  payoutCompletions      PayoutRequest[]          @relation("PayoutCompletion")
+  payoutRequestEvents    PayoutRequestEvent[]
+  ledgerTransactions     WalletLedgerTransaction[]
+
+  @@map("users")
+  @@schema("referral_app")
+}
+
+model ReferralCampaign {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignKey  String         @unique @map("campaign_key")
+  displayName  String         @map("display_name")
+  campaignType String         @default("STANDARD") @map("campaign_type")
+  status       CampaignStatus @default(DRAFT)
+  startsAt     DateTime?      @map("starts_at") @db.Timestamptz(6)
+  endsAt       DateTime?      @map("ends_at") @db.Timestamptz(6)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  referralCodes ReferralCode[]
+  attributions  ReferralAttribution[]
+  rewardRules   RewardRule[]
+
+  @@map("referral_campaigns")
+  @@schema("referral_app")
+}
+
+// Reusable link/code: intentionally NO single-use flag or max_uses column.
+// NULL expires_at = evergreen; an expiry only stops new attribution after that time.
+model ReferralCode {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId String    @map("owner_user_id") @db.Uuid
+  campaignId  String?   @map("campaign_id") @db.Uuid
+  publicCode  String    @map("public_code")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+
+  owner        User                  @relation("ReferralCodeOwner", fields: [ownerUserId], references: [id])
+  campaign     ReferralCampaign?     @relation(fields: [campaignId], references: [id])
+  attributions ReferralAttribution[]
+  linkEvents   ReferralLinkEvent[]
+  metric       ReferralLinkMetric?
+
+  @@unique([id, ownerUserId])
+  @@index([ownerUserId, createdAt(sort: Desc)])
+  @@map("referral_codes")
+  @@schema("referral_app")
+}
+
+// A single link may have many attribution rows. The unique constraint below blocks
+// duplicate attribution of the same person through the exact same link only; it does
+// NOT decide the still-open one-vs-multiple-referrers policy.
+model ReferralAttribution {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referralCodeId        String            @map("referral_code_id") @db.Uuid
+  referrerUserId        String            @map("referrer_user_id") @db.Uuid
+  referredUserId        String            @map("referred_user_id") @db.Uuid
+  campaignId            String?           @map("campaign_id") @db.Uuid
+  attributionStatus     AttributionStatus @default(ATTRIBUTED) @map("attribution_status")
+  attributedAt          DateTime          @default(now()) @map("attributed_at") @db.Timestamptz(6)
+  sourceEventId         String?           @map("source_event_id")
+  mainAppInstallLoginAt DateTime?         @map("main_app_install_login_at") @db.Timestamptz(6)
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  referralCode ReferralCode      @relation(fields: [referralCodeId, referrerUserId], references: [id, ownerUserId])
+  referredUser User              @relation("ReferredUser", fields: [referredUserId], references: [id])
+  campaign     ReferralCampaign? @relation(fields: [campaignId], references: [id])
+
+  linkEvents     ReferralLinkEvent[]
+  chatAccess     ReferralChatAccess?
+  referralEvents ReferralEvent[]
+  orderEvents    ReferralOrderEvent[]
+
+  @@unique([referralCodeId, referredUserId])
+  @@index([referrerUserId, attributedAt(sort: Desc)])
+  @@index([referredUserId, attributedAt(sort: Desc)])
+  @@map("referral_attributions")
+  @@schema("referral_app")
+}
+
+// One row per link event. dedupe_key must be random/pseudonymous and short-lived;
+// never use raw IP, phone/email, device ID, or UPI as an analytics key.
+model ReferralLinkEvent {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  referralCodeId String        @map("referral_code_id") @db.Uuid
+  attributionId  String?       @map("attribution_id") @db.Uuid
+  eventType      LinkEventType @map("event_type")
+  dedupeKey      String        @unique @map("dedupe_key")
+  conversionKind String?       @map("conversion_kind")
+  occurredAt     DateTime      @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  referralCode ReferralCode         @relation(fields: [referralCodeId], references: [id])
+  attribution  ReferralAttribution? @relation(fields: [attributionId], references: [id])
+
+  @@index([referralCodeId, occurredAt(sort: Desc)])
+  @@map("referral_link_events")
+  @@schema("referral_app")
+}
+
+// Materialized per-link metrics for the referrer/admin UI; event rows remain the audit source.
+// counts are updated idempotently from referral_link_events, never trusted from clients.
+model ReferralLinkMetric {
+  referralCodeId   String   @id @map("referral_code_id") @db.Uuid
+  clickCount       BigInt   @default(0) @map("click_count")
+  uniqueClickCount BigInt   @default(0) @map("unique_click_count")
+  referralCount    BigInt   @default(0) @map("referral_count")
+  conversionCount  BigInt   @default(0) @map("conversion_count")
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  referralCode ReferralCode @relation(fields: [referralCodeId], references: [id])
+
+  @@map("referral_link_metrics")
+  @@schema("referral_app")
+}
+
+model ReferralChatAccess {
+  attributionId       String          @id @map("attribution_id") @db.Uuid
+  accessState         ChatAccessState @default(LOCKED) @map("access_state")
+  unlockedAt          DateTime?       @map("unlocked_at") @db.Timestamptz(6)
+  unlockSourceEventId String?         @unique @map("unlock_source_event_id")
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  attribution ReferralAttribution @relation(fields: [attributionId], references: [id])
+
+  @@map("referral_chat_access")
+  @@schema("referral_app")
+}
+
+model ReferralEvent {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  attributionId String   @map("attribution_id") @db.Uuid
+  sourceSystem  String   @map("source_system")
+  sourceEventId String   @map("source_event_id")
+  eventType     String   @map("event_type")
+  occurredAt    DateTime @map("occurred_at") @db.Timestamptz(6)
+  verifiedAt    DateTime @default(now()) @map("verified_at") @db.Timestamptz(6)
+  ruleVersion   Int?     @map("rule_version")
+  safeMetadata  Json     @default("{}") @map("safe_metadata")
+
+  attribution ReferralAttribution @relation(fields: [attributionId], references: [id])
+
+  @@unique([sourceSystem, sourceEventId])
+  @@index([attributionId, occurredAt(sort: Desc)])
+  @@map("referral_events")
+  @@schema("referral_app")
+}
+
+// Versioned global/campaign reward rules. Canonical promo matching is server-side:
+// trim + case-fold + remove whitespace; TEAM CHX and TEAMCHX become TEAMCHX.
+// (Partial unique indexes for (rule_key, rule_version) live in the SQL migration.)
+model RewardRule {
+  id                  String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaignId          String?             @map("campaign_id") @db.Uuid
+  ruleKey             String              @map("rule_key")
+  ruleVersion         Int                 @map("rule_version")
+  matchType           RewardRuleMatchType @map("match_type")
+  promoCodeNormalized String?             @map("promo_code_normalized")
+  rateBps             Int                 @map("rate_bps")
+  currency            String              @default("INR") @db.Char(3)
+  effectiveFrom       DateTime            @default(now()) @map("effective_from") @db.Timestamptz(6)
+  effectiveUntil      DateTime?           @map("effective_until") @db.Timestamptz(6)
+  isActive            Boolean             @default(true) @map("is_active")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  campaign           ReferralCampaign?          @relation(fields: [campaignId], references: [id])
+  ledgerTransactions WalletLedgerTransaction[]
+
+  @@map("reward_rules")
+  @@schema("referral_app")
+}
+
+model ReferralOrderEvent {
+  id                                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceSystem                      String            @map("source_system")
+  sourceEventId                     String            @map("source_event_id")
+  eventType                         OrderEventType    @map("event_type")
+  orderId                           String            @map("order_id")
+  referralAttributionId             String            @map("referral_attribution_id") @db.Uuid
+  commissionableNetAmountMinorUnits BigInt            @map("commissionable_net_amount_minor_units")
+  refundAmountMinorUnits            BigInt            @default(0) @map("refund_amount_minor_units")
+  currency                          String            @default("INR") @db.Char(3)
+  appliedPromoCodeInput             String?           @map("applied_promo_code_input") @db.VarChar(100)
+  promoCodeNormalized               String?           @map("promo_code_normalized")
+  rewardEligibility                 RewardEligibility @default(HOLD) @map("reward_eligibility")
+  occurredAt                        DateTime          @map("occurred_at") @db.Timestamptz(6)
+  receivedAt                        DateTime          @default(now()) @map("received_at") @db.Timestamptz(6)
+  payloadDigest                     String?           @map("payload_digest")
+
+  attribution ReferralAttribution @relation(fields: [referralAttributionId], references: [id])
+
+  @@unique([sourceSystem, sourceEventId])
+  @@index([referralAttributionId, occurredAt(sort: Desc)])
+  @@map("referral_order_events")
+  @@schema("referral_app")
+}
+
+// Wallet balance rows are rebuildable projections and transaction lock targets,
+// not the source of truth (the append-only ledger is).
+model WalletAccount {
+  userId              String   @map("user_id") @db.Uuid
+  currency            String   @db.Char(3)
+  pendingMinorUnits   BigInt   @default(0) @map("pending_minor_units")
+  availableMinorUnits BigInt   @default(0) @map("available_minor_units")
+  reservedMinorUnits  BigInt   @default(0) @map("reserved_minor_units")
+  withdrawnMinorUnits BigInt   @default(0) @map("withdrawn_minor_units")
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, currency])
+  @@map("wallet_accounts")
+  @@schema("referral_app")
+}
+
+// Payout bank/UPI details stay private: only a vault reference + masked label are stored here.
+model PayoutMethod {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String           @map("user_id") @db.Uuid
+  methodType       PayoutMethodType @map("method_type")
+  providerVaultRef String           @map("provider_vault_ref")
+  maskedLabel      String           @map("masked_label")
+  isActive         Boolean          @default(true) @map("is_active")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user           User            @relation(fields: [userId], references: [id])
+  payoutRequests PayoutRequest[]
+
+  @@unique([userId, id])
+  @@index([userId, isActive])
+  @@map("payout_methods")
+  @@schema("referral_app")
+}
+
+// No arbitrary minimum or maximum payout. The API locks wallet_accounts and reserves
+// the amount atomically; amount > available is rejected. Statuses follow the confirmed
+// lifecycle: PENDING_APPROVAL → (APPROVED|REJECTED|CANCELLED) → COMPLETED.
+model PayoutRequest {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String              @map("user_id") @db.Uuid
+  payoutMethodId    String              @map("payout_method_id") @db.Uuid
+  amountMinorUnits  BigInt              @map("amount_minor_units")
+  currency          String              @default("INR") @db.Char(3)
+  status            PayoutRequestStatus @default(PENDING_APPROVAL)
+  requestedAt       DateTime            @default(now()) @map("requested_at") @db.Timestamptz(6)
+  reviewedByUserId  String?             @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt        DateTime?           @map("reviewed_at") @db.Timestamptz(6)
+  rejectionReason   String?             @map("rejection_reason")
+  completedByUserId String?             @map("completed_by_user_id") @db.Uuid
+  completedAt       DateTime?           @map("completed_at") @db.Timestamptz(6)
+  paymentUtr        String?             @map("payment_utr") @db.VarChar(128)
+  idempotencyKey    String              @map("idempotency_key")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Composite FK keeps the payout method owned by the same user (matches the draft DDL).
+  // NOTE: userId is bound to this relation, so the requester is reached via `payoutMethod.user`.
+  payoutMethod  PayoutMethod         @relation(fields: [userId, payoutMethodId], references: [userId, id])
+  reviewedBy    User?                @relation("PayoutReviewer", fields: [reviewedByUserId], references: [id])
+  completedBy   User?                @relation("PayoutCompletion", fields: [completedByUserId], references: [id])
+  requestEvents PayoutRequestEvent[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, requestedAt(sort: Desc)])
+  @@map("payout_requests")
+  @@schema("referral_app")
+}
+
+model PayoutRequestEvent {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payoutRequestId String                 @map("payout_request_id") @db.Uuid
+  eventType       PayoutRequestEventType @map("event_type")
+  fromStatus      String?                @map("from_status")
+  toStatus        String                 @map("to_status")
+  actorUserId     String?                @map("actor_user_id") @db.Uuid
+  eventKey        String                 @unique @map("event_key")
+  safeMetadata    Json                   @default("{}") @map("safe_metadata")
+  occurredAt      DateTime               @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  payoutRequest PayoutRequest @relation(fields: [payoutRequestId], references: [id])
+  actor         User?         @relation(fields: [actorUserId], references: [id])
+
+  @@index([payoutRequestId, occurredAt])
+  @@map("payout_request_events")
+  @@schema("referral_app")
+}
+
+// One wallet-ledger transaction = one logical credit, release, reversal, or payout action.
+// reference_type/reference_id link to an order event or payout request without exposing secrets.
+model WalletLedgerTransaction {
+  id                       String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                   String                @map("user_id") @db.Uuid
+  currency                 String                @default("INR") @db.Char(3)
+  transactionType          LedgerTransactionType @map("transaction_type")
+  referenceType            String                @map("reference_type")
+  referenceId              String                @map("reference_id") @db.Uuid
+  idempotencyKey           String                @unique @map("idempotency_key")
+  ruleId                   String?               @map("rule_id") @db.Uuid
+  sourceEventId            String?               @map("source_event_id")
+  commissionBaseMinorUnits BigInt?               @map("commission_base_minor_units")
+  rateBps                  Int?                  @map("rate_bps")
+  commissionMinorUnits     BigInt?               @map("commission_minor_units")
+  promoCodeNormalized      String?               @map("promo_code_normalized")
+  createdAt                DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User                @relation(fields: [userId], references: [id])
+  rule    RewardRule?         @relation(fields: [ruleId], references: [id])
+  entries WalletLedgerEntry[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([referenceType, referenceId])
+  @@map("wallet_ledger_transactions")
+  @@schema("referral_app")
+}
+
+// Required transactional posting patterns (enforced by the ledger service):
+//   Commission locked:        +PENDING
+//   Release:                  -PENDING / +AVAILABLE
+//   Withdrawal request:       -AVAILABLE / +RESERVED
+//   Rejection/cancel:         -RESERVED / +AVAILABLE
+//   Admin-completed payout:   -RESERVED / +WITHDRAWN (requires payment_utr)
+model WalletLedgerEntry {
+  transactionId    String       @map("transaction_id") @db.Uuid
+  lineNumber       Int          @map("line_number") @db.SmallInt
+  bucket           LedgerBucket
+  amountMinorUnits BigInt       @map("amount_minor_units")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  transaction WalletLedgerTransaction @relation(fields: [transactionId], references: [id])
+
+  @@id([transactionId, lineNumber])
+  @@index([bucket, createdAt(sort: Desc)])
+  @@map("wallet_ledger_entries")
+  @@schema("referral_app")
+}

@@ -1,0 +1,13 @@
+# dependencies / build output
+node_modules/
+dist/
+coverage/
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+
+# logs / OS
+*.log
+.DS_Store

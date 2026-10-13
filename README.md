@@ -1,6 +1,6 @@
 # Andos Referral
 
-**Status:** 🚧 Planning complete — implementation pending kickoff.
+**Status:** 🚧 Phase 1 (Referral Foundation, Attribution & Ledger) — backend foundation in progress.
 
 Referral-management + social/chat companion app for the Andos ecosystem:
 reusable invite links with metrics, referral attribution, commission ledger &
@@ -18,6 +18,13 @@ wallet — and, in later phases, connections and private chat.
 | Jobs | BullMQ + Redis |
 | CI | GitHub Actions |
 
+## Repository layout
+
+```
+server/   NestJS API — Phase 1 foundation (in progress)
+mobile/   Flutter app — planned (starts after the Phase-1 backend foundation)
+```
+
 ## Roadmap
 
 1. **Referral Foundation, Attribution & Ledger** — links, attribution, commissions, wallet, withdrawal requests
@@ -26,12 +33,9 @@ wallet — and, in later phases, connections and private chat.
 4. Stories & profile
 5. Payout operations & admin
 
-## Structure
+## Quick start (server)
 
-```
-mobile/   Flutter app   (added at build start)
-server/   NestJS API    (added at build start)
-```
+See [server/README.md](server/README.md).
 
 ---
 _Maintained by Andos._
