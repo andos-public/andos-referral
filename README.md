@@ -1,24 +1,37 @@
 # Andos Referral
 
-**Status:** 🚧 Kickoff — scaffolding comes next.
+**Status:** 🚧 Planning complete — implementation pending kickoff.
 
-Referral system for the Andos ecosystem: invite links, attribution, and rewards.
-
-## Planned scope
-
-- [ ] Unique referral codes / invite links
-- [ ] Click + signup attribution
-- [ ] Rewards / credits engine
-- [ ] Minimal dashboard — invites · conversions · payouts
-- [ ] Architecture + flow docs
+Referral-management + social/chat companion app for the Andos ecosystem:
+reusable invite links with metrics, referral attribution, commission ledger &
+wallet — and, in later phases, connections and private chat.
 
 ## Stack
 
-_TBD — sets with the build plan (next step)._
+| Layer | Choice |
+|---|---|
+| Mobile | Flutter + Dart — edge-to-edge native UI |
+| Client state | Riverpod 3 |
+| Client storage | Drift + SQLite |
+| Backend | NestJS + TypeScript (modular monolith) |
+| Database | PostgreSQL + Prisma |
+| Jobs | BullMQ + Redis |
+| CI | GitHub Actions |
 
-## Links
+## Roadmap
 
-- Repo: https://github.com/andos-public/andos-referral
+1. **Referral Foundation, Attribution & Ledger** — links, attribution, commissions, wallet, withdrawal requests
+2. Connections & notifications
+3. Rich communication (E2EE)
+4. Stories & profile
+5. Payout operations & admin
+
+## Structure
+
+```
+mobile/   Flutter app   (added at build start)
+server/   NestJS API    (added at build start)
+```
 
 ---
 _Maintained by Andos._
