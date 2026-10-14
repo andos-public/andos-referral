@@ -156,3 +156,46 @@ The e2e suite forces its own environment via `test/setup-env.ts` (jest `setupFil
   (Note: `public_code` uniqueness is a functional index on `lower(public_code)`, so lookups use `findFirst`.)
 - Next planned work (Sprint 2): signed main-app signup/install-login integration, exact link-attribution
   beneficiary, referral list/milestone projection and referral-chat entitlement state.
+
+
+## Sprint 4 — hardening, admin console slice & readiness
+
+### Replay defence on signed webhooks
+`x-andos-timestamp` (unix seconds/millis or ISO-8601) must be within
+`WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS` (default 300 s) of the server clock, and the signature must
+be computed over `${timestamp}.${rawBody}` so a captured body cannot be re-signed with a fresh
+timestamp. Set `WEBHOOK_REQUIRE_TIMESTAMP=true` to make the header mandatory — **production
+refuses to boot without it**, as does a missing `VISITOR_HASH_PEPPER`.
+
+### Admin console slice (`x-admin-key`)
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /v1/admin/overview` | Live dashboard: users, codes, attribution, orders, wallets, hold queue, payouts, ledger and audit counters |
+| `GET /v1/admin/holds?status=HELD\|DUE\|RELEASED\|REVERSED` | Commission-hold queue with eligibility instant and state |
+| `GET /v1/admin/users?query=&accountStatus=&hasReferralCode=` | User search with wallet summary |
+| `GET /v1/admin/users/:id` | User bundle: codes, attributions (both directions), wallet, payout methods and requests |
+| `GET /v1/admin/wallets/:userId` | Wallet balances + paged ledger |
+| `GET /v1/admin/referrals/:id` | Attribution detail: milestones, chat gate, order events and their ledger lines |
+| `GET /v1/admin/audit-logs?action=&targetType=&targetId=&userId=` | Immutable audit trail (append-only) |
+| `GET /v1/admin/metrics` | In-process operational counters |
+
+### Observability & health
+- Every response carries `x-request-id` (client-supplied ids are accepted after sanitization) and one
+  structured JSON log line per request (`REQUEST_LOG_ENABLED`).
+- `GET /v1/health/live` — process liveness (no dependencies).
+- `GET /v1/health/ready` — database round-trip + Phase-1 schema presence; **503** when not ready.
+- `GET /v1/health` — legacy liveness+database shape, always 200.
+- Database constraint failures (CHECK/FK/NOT NULL/UNIQUE) are mapped to stable **409** codes
+  (`CONSTRAINT_VIOLATION`, `DUPLICATE`, `FOREIGN_KEY_VIOLATION`, `NULL_NOT_ALLOWED`) instead of 500s.
+
+### Audit trail
+`admin_audit_logs` records every privileged action (payout approve/reject/complete, hold-release
+sweep, …) with the acting key reference (`admin-key:<sha256 prefix>` — the raw key is never stored),
+a correlation id and a ≤8 KiB metadata bag. The table is append-only enforced by a database trigger
+that rejects UPDATE and DELETE.
+
+### Deployment notes
+- `TRUST_PROXY=false|true|1|2|loopback, 10.0.0.0/8` wires Express `trust proxy` for correct client
+  IPs and rate limiting behind a load balancer.
+- Production boot requires: `ADMIN_API_KEY`, `MAIN_APP_WEBHOOK_SECRET`, `WEBHOOK_REQUIRE_TIMESTAMP=true`,
+  `VISITOR_HASH_PEPPER`, and `TRUSTED_USER_HEADER_AUTH=false`.

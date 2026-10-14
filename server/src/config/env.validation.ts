@@ -50,6 +50,46 @@ const envSchema = z
 
     /** Exact browser origins allowed to call the API (comma-separated). Empty = CORS disabled. */
     CORS_ALLOWED_ORIGINS: z.string().optional(),
+
+    /**
+     * Replay defence for signed webhooks: how old (or how far in the future) an
+     * `x-andos-timestamp` may be. Default 300 s. Ignored when the header is absent and
+     * WEBHOOK_REQUIRE_TIMESTAMP is false.
+     */
+    WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS: z.coerce.number().int().min(1).max(3600).default(300),
+
+    /**
+     * When true, every verified webhook MUST carry `x-andos-timestamp` and the signature MUST
+     * be computed over `${timestamp}.${rawBody}` (binding). Production refuses to boot with
+     * this disabled — a body-only signature is replayable forever.
+     */
+    WEBHOOK_REQUIRE_TIMESTAMP: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+
+    /**
+     * Secret pepper for visitor-token hashing (click dedupe). When set, visitor tokens are
+     * HMAC-SHA256(pepper, token) instead of a bare SHA-256, so a stolen database cannot be
+     * brute-forced back to device tokens. Required in production (min 16 chars).
+     */
+    VISITOR_HASH_PEPPER: z.string().min(16).optional(),
+
+    /**
+     * Express `trust proxy` setting — how X-Forwarded-For is interpreted for client IPs and
+     * rate limiting. `false` (default) = no proxy; a number = hops to trust; `true` = trust
+     * the left-most header; or a comma-separated IP/CIDR list.
+     */
+    TRUST_PROXY: z.string().default('false'),
+
+    /**
+     * Emit one structured JSON log line per HTTP request (request id, route, status, duration).
+     * Off in tests to keep the suite output readable.
+     */
+    REQUEST_LOG_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((value) => value === 'true'),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production') {
@@ -72,6 +112,21 @@ const envSchema = z
           code: z.ZodIssueCode.custom,
           path: ['MAIN_APP_WEBHOOK_SECRET'],
           message: 'is required in production (verified event signature verification)',
+        });
+      }
+      if (!env.WEBHOOK_REQUIRE_TIMESTAMP) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['WEBHOOK_REQUIRE_TIMESTAMP'],
+          message:
+            'must be true in production — without a bound timestamp a captured webhook body can be replayed',
+        });
+      }
+      if (!env.VISITOR_HASH_PEPPER) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['VISITOR_HASH_PEPPER'],
+          message: 'is required in production (unpeppered visitor hashes are guessable)',
         });
       }
     }

@@ -6,6 +6,7 @@ import { formatMinorUnits, parseMinorUnits } from '../common/money.util';
 import { isUniqueConstraintViolation } from '../common/prisma-errors';
 import { IdentityService } from '../identity/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetricsService } from '../observability/metrics.service';
 import { LedgerService, ledgerKeys } from '../wallet/ledger.service';
 import { VerifiedOrderEventResponseDto } from './dto/order-event-response.dto';
 import { OrderEventTypeDto, VerifiedOrderEventDto } from './dto/verified-order-event.dto';
@@ -39,6 +40,7 @@ export class OrderEventsService {
     private readonly commission: CommissionService,
     private readonly ledger: LedgerService,
     private readonly config: ConfigService,
+    private readonly metrics: MetricsService,
   ) {}
 
   private holdHours(): number {
@@ -159,6 +161,11 @@ export class OrderEventsService {
         promoCodeNormalized: quote.canonicalPromoCode,
       });
       ledgerPosted = !posted.deduplicated;
+    }
+
+    this.metrics.recordOrderEvent(dto.eventType, createdNow ? 'credited' : 'deduplicated');
+    if (createdNow) {
+      this.metrics.recordCommissionLocked(quote.commissionMinorUnits, quote.rateBps);
     }
 
     return {
@@ -312,6 +319,11 @@ export class OrderEventsService {
       reversalBucket = 'AVAILABLE';
     }
 
+    this.metrics.recordOrderEvent(dto.eventType, reversed ? `reversed:${reversalBucket}` : 'no_prior_credit');
+    if (reversed) {
+      this.metrics.recordCommissionReversed(commission, reversalBucket);
+    }
+
     return {
       recorded: true,
       deduplicated: !createdNow,
@@ -325,6 +337,7 @@ export class OrderEventsService {
   }
 
   private rejected(reason: RejectionReason): VerifiedOrderEventResponseDto {
+    this.metrics.recordOrderEvent('UNKNOWN', `rejected:${reason}`);
     return { recorded: false, deduplicated: false, reason };
   }
 }

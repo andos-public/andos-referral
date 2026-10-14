@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { LinkEventType } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { AttributionService } from '../attribution/attribution.service';
@@ -42,7 +43,13 @@ export class LinkEventsService {
     private readonly prisma: PrismaService,
     private readonly attribution: AttributionService,
     private readonly identity: IdentityService,
+    private readonly config: ConfigService,
   ) {}
+
+  /** Optional secret pepper for visitor-token hashing (required in production). */
+  private visitorPepper(): string | undefined {
+    return this.config.get<string>('VISITOR_HASH_PEPPER') ?? undefined;
+  }
 
   async recordClick(dto: RecordLinkEventDto): Promise<RecordedLinkEventResponseDto> {
     const code = await this.prisma.referralCode.findFirst({
@@ -58,7 +65,9 @@ export class LinkEventsService {
     }
 
     const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date();
-    const visitorHash = dto.visitorToken ? hashVisitorToken(dto.visitorToken) : null;
+    const visitorHash = dto.visitorToken
+      ? hashVisitorToken(dto.visitorToken, this.visitorPepper())
+      : null;
     const dedupeKey = visitorHash
       ? dto.idempotent
         ? `click|${code.id}|${visitorHash}|idempotent`

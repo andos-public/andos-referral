@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 import { PayoutRequest, PayoutRequestStatus, Prisma } from '@prisma/client';
 import { formatMinorUnits, parseMinorUnits } from '../common/money.util';
 import { isUniqueConstraintViolation } from '../common/prisma-errors';
+import { AuditLogService } from '../audit/audit-log.service';
+import { MetricsService } from '../observability/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LedgerService, ledgerKeys } from '../wallet/ledger.service';
 import {
@@ -44,6 +46,8 @@ export class PayoutRequestsService {
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
     private readonly config: ConfigService,
+    private readonly metrics: MetricsService,
+    private readonly auditLogs: AuditLogService,
   ) {}
 
   // ───────────────────────────── owner side ─────────────────────────────
@@ -113,6 +117,7 @@ export class PayoutRequestsService {
       });
 
       const row = await this.prisma.payoutRequest.findUniqueOrThrow({ where: { id: created } });
+      this.metrics.recordPayoutTransition('REQUESTED', row.amountMinorUnits);
       return this.toResponse(row, method, true);
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
@@ -210,9 +215,9 @@ export class PayoutRequestsService {
   }
 
   /** PENDING_APPROVAL → APPROVED. No money moves; the reservation stays in RESERVED. */
-  async approve(id: string): Promise<PayoutRequestResponseDto> {
+  async approve(id: string, actorRef?: string, requestId?: string | null): Promise<PayoutRequestResponseDto> {
     const actor = await this.requireAdminActor();
-    return this.transition({
+    const result = await this.transition({
       id,
       actorUserId: actor.id,
       allowedFrom: ['PENDING_APPROVAL'],
@@ -222,12 +227,27 @@ export class PayoutRequestsService {
       eventKeyPrefix: 'approved',
       setReview: true,
     });
+    await this.auditLogs.record({
+      actorType: 'ADMIN_KEY',
+      actorRef: actorRef ?? `user:${actor.id}`,
+      action: 'payout.approve',
+      targetType: 'payout_request',
+      targetId: result.id,
+      requestId,
+      metadata: { amountMinorUnits: result.amountMinorUnits, status: result.status },
+    });
+    return result;
   }
 
   /** PENDING_APPROVAL|APPROVED → REJECTED, releasing the reservation back to AVAILABLE. */
-  async reject(id: string, dto: RejectPayoutRequestDto): Promise<PayoutRequestResponseDto> {
+  async reject(
+    id: string,
+    dto: RejectPayoutRequestDto,
+    actorRef?: string,
+    requestId?: string | null,
+  ): Promise<PayoutRequestResponseDto> {
     const actor = await this.requireAdminActor();
-    return this.transition({
+    const result = await this.transition({
       id,
       actorUserId: actor.id,
       allowedFrom: ['PENDING_APPROVAL', 'APPROVED'],
@@ -239,12 +259,32 @@ export class PayoutRequestsService {
       rejectionReason: dto.reason,
       releaseReservation: true,
     });
+    await this.auditLogs.record({
+      actorType: 'ADMIN_KEY',
+      actorRef: actorRef ?? `user:${actor.id}`,
+      action: 'payout.reject',
+      targetType: 'payout_request',
+      targetId: result.id,
+      requestId,
+      metadata: {
+        amountMinorUnits: result.amountMinorUnits,
+        status: result.status,
+        reason: dto.reason,
+        ledgerPosted: result.ledgerPosted ?? false,
+      },
+    });
+    return result;
   }
 
   /** APPROVED (or PENDING_APPROVAL) → COMPLETED. Requires a valid payment UTR; RESERVED → WITHDRAWN. */
-  async complete(id: string, dto: CompletePayoutRequestDto): Promise<PayoutRequestResponseDto> {
+  async complete(
+    id: string,
+    dto: CompletePayoutRequestDto,
+    actorRef?: string,
+    requestId?: string | null,
+  ): Promise<PayoutRequestResponseDto> {
     const actor = await this.requireAdminActor();
-    return this.transition({
+    const result = await this.transition({
       id,
       actorUserId: actor.id,
       allowedFrom: ['APPROVED', 'PENDING_APPROVAL'],
@@ -255,6 +295,21 @@ export class PayoutRequestsService {
       setReview: true,
       complete: { paymentUtr: dto.paymentUtr, actorUserId: actor.id },
     });
+    await this.auditLogs.record({
+      actorType: 'ADMIN_KEY',
+      actorRef: actorRef ?? `user:${actor.id}`,
+      action: 'payout.complete',
+      targetType: 'payout_request',
+      targetId: result.id,
+      requestId,
+      metadata: {
+        amountMinorUnits: result.amountMinorUnits,
+        status: result.status,
+        paymentUtr: result.paymentUtr,
+        ledgerPosted: result.ledgerPosted ?? false,
+      },
+    });
+    return result;
   }
 
   // ───────────────────────────── internals ─────────────────────────────
@@ -399,6 +454,7 @@ export class PayoutRequestsService {
       where: { id },
       include: { payoutMethod: { select: { id: true, methodType: true, maskedLabel: true } } },
     });
+    this.metrics.recordPayoutTransition(after.status, after.amountMinorUnits);
     // `ledgerPosted` answers "did THIS action move money?" — approve only changes status.
     return this.toResponse(after, after.payoutMethod, Boolean(input.releaseReservation || input.complete));
   }

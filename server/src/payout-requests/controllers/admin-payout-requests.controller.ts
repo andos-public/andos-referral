@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { AdminActor, AdminActorContext } from '../../audit/admin-actor.decorator';
 import { AdminAuthGuard } from '../../auth/admin-auth.guard';
 import {
   AdminListPayoutRequestsQueryDto,
@@ -37,8 +38,11 @@ export class AdminPayoutRequestsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve a pending request (no money moves)' })
   @ApiOkResponse({ type: PayoutRequestResponseDto })
-  approve(@Param('id', new ParseUUIDPipe()) id: string): Promise<PayoutRequestResponseDto> {
-    return this.payoutRequests.approve(id);
+  approve(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @AdminActor() actor: AdminActorContext,
+  ): Promise<PayoutRequestResponseDto> {
+    return this.payoutRequests.approve(id, actor.ref, actor.requestId);
   }
 
   @Post(':id/reject')
@@ -48,8 +52,9 @@ export class AdminPayoutRequestsController {
   reject(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: RejectPayoutRequestDto,
+    @AdminActor() actor: AdminActorContext,
   ): Promise<PayoutRequestResponseDto> {
-    return this.payoutRequests.reject(id, dto);
+    return this.payoutRequests.reject(id, dto, actor.ref, actor.requestId);
   }
 
   @Post(':id/complete')
@@ -62,7 +67,8 @@ export class AdminPayoutRequestsController {
   complete(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: CompletePayoutRequestDto,
+    @AdminActor() actor: AdminActorContext,
   ): Promise<PayoutRequestResponseDto> {
-    return this.payoutRequests.complete(id, dto);
+    return this.payoutRequests.complete(id, dto, actor.ref, actor.requestId);
   }
 }

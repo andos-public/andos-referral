@@ -12,4 +12,7 @@ process.env.REFERRAL_LINK_BASE_URL = 'https://andostpsite.vercel.app/#ref=';
 process.env.THROTTLE_LIMIT = '100000';
 process.env.DOCS_ENABLED = 'true'; // exercise the real bootstrap wiring (CORS + /docs) in e2e
 process.env.COMMISSION_HOLD_HOURS = '168'; // locked default; the holds spec overrides it locally
+process.env.WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS = '300'; // Sprint-4 replay window (spec exercises both paths)
+process.env.VISITOR_HASH_PEPPER = 'e2e-visitor-pepper-0123456789'; // production requires a pepper
+process.env.REQUEST_LOG_ENABLED = 'false'; // keep the suite output readable
 process.env.CORS_ALLOWED_ORIGINS = 'https://andostpsite.vercel.app';

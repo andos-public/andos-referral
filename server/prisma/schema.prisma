@@ -487,3 +487,24 @@ model WalletLedgerEntry {
   @@map("wallet_ledger_entries")
   @@schema("referral_app")
 }
+
+// Immutable admin/system audit trail (Sprint 4). Append-only: a database trigger rejects
+// UPDATE and DELETE, so history cannot be rewritten even through a compromised app path.
+// The acting admin key is referenced by a salted hash prefix — the raw key is never stored.
+model AdminAuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorType  String   @map("actor_type") @db.VarChar(20)
+  actorRef   String?  @map("actor_ref") @db.VarChar(120)
+  action     String   @map("action") @db.VarChar(80)
+  targetType String?  @map("target_type") @db.VarChar(40)
+  targetId   String?  @map("target_id") @db.Uuid
+  requestId  String?  @map("request_id") @db.VarChar(128)
+  metadata   Json     @default("{}") @map("metadata")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@map("admin_audit_logs")
+  @@schema("referral_app")
+}
