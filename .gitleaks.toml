@@ -1,0 +1,20 @@
+# gitleaks configuration — extends the default ruleset.
+#
+# Allowlist rationale: the repository is public and its test suite uses obviously synthetic
+# credentials that must stay readable. Every entry below is a literal placeholder, never a real
+# secret; add paths/patterns here only after confirming the value cannot authenticate anything.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic test fixtures and documentation placeholders"
+paths = [
+  '''server/test/setup-env\.ts$''',
+  '''server/src/audit/audit\.dto\.ts$''',
+]
+regexes = [
+  '''e2e-admin-key''',
+  '''e2e-webhook-secret''',
+  '''admin-key:<sha256-prefix-12-hex>''',
+]

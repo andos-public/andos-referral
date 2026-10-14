@@ -56,7 +56,7 @@ export class AuditLogEntryDto {
   @ApiProperty({ enum: AUDIT_ACTOR_TYPES })
   actorType!: string;
 
-  @ApiPropertyOptional({ type: String, nullable: true, example: 'admin-key:9f2c1a4b7d0e' })
+  @ApiPropertyOptional({ type: String, nullable: true, example: 'admin-key:<sha256-prefix-12-hex>' })
   actorRef!: string | null;
 
   @ApiProperty({ example: 'payout.approve' })
