@@ -1,0 +1,79 @@
+# CodeRabbit configuration — Golden Stack v1 (layer L4).
+# Free with full features for public repositories. CodeRabbit is an advisory reviewer:
+# CI gates + human review remain the required checks (never a substitute).
+language: en-US
+reviews:
+  profile: assertive
+  request_changes_workflow: false # advisory only — do not block merges by itself
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  poem: false
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - main
+  path_instructions:
+    - path: 'server/prisma/**'
+      instructions: >-
+        Migrations are the contract. Flag any change that relaxes a CHECK constraint,
+        drops an index, or edits SQL that was already applied. New migrations must be
+        additive (expand/contract) and hand-reviewed; BigInt counters never leak into
+        JSON (convert with toNumber).
+    - path: 'server/src/auth/**'
+      instructions: >-
+        Authorization code. Verify every guard fails closed, comparisons stay
+        timing-safe, the production-refusal invariants in env validation stay intact,
+        and no secret or PII is logged. Flag fail-open fallbacks as bugs.
+    - path: 'server/src/link-events/**'
+      instructions: >-
+        Verified events are the ONLY source of referral/conversion counts. Check
+        idempotency per sourceEventId, the attribution CHECK rule (CLICK => attribution_id
+        NULL; REFERRAL_ATTRIBUTED/CONVERSION => NOT NULL), and that business rejections
+        stay HTTP 200 with {recorded,deduplicated,reason}.
+    - path: 'server/src/main-app-events/**'
+      instructions: >-
+        Trusted main-app lifecycle events (HMAC-signed). INSTALL_LOGIN unlocks referral
+        chat: unlocks must be idempotent and first-wins, must never create a
+        friendship/connection, self-referrals must be rejected, safeMetadata is capped,
+        and raw device/payment/contact identifiers must never be stored.
+    - path: 'server/src/referrals/**'
+      instructions: >-
+        Read model. Ownership rules: the list returns the caller's own referrals only;
+        a single referral is readable by its participants only; foreign/unknown ids
+        answer 404 with no existence leak. Milestones must derive from stored rows
+        only — never from client input.
+    - path: 'server/src/**/*.ts'
+      instructions: >-
+        Conventions: money is integer paise (never floats); BigInt converts only at the
+        API edge; public_code lookups use findFirst (functional index); DTOs use
+        class-validator with whitelist + forbidNonWhitelisted; keep NestJS module
+        boundaries; error codes 400/401/404/422 as documented.
+    - path: '.github/workflows/**'
+      instructions: >-
+        CI gates are security controls. Flag any change that weakens a gate, removes a
+        path filter, unpins a scanner version, or makes a security job non-blocking
+        without an explicit rationale comment.
+    - path: 'server/test/**'
+      instructions: >-
+        E2E runs against real PostgreSQL only. Tests must clean up their own rows in FK
+        order and must not depend on a developer .env (test/setup-env.ts controls env).
+    - path: '**/*.md'
+      instructions: >-
+        Planning docs live in Google Drive — only developer tooling docs (READMEs,
+        AGENTS.md, docs/AGENT_TOOLING.md) belong in this repo. Never allow tokens,
+        keys, payout details or referred users' private data in any doc.
+  tools:
+    actionlint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    semgrep:
+      enabled: true
+    yamllint:
+      enabled: true
+chat:
+  auto_reply: true
