@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { isUniqueConstraintViolation } from '../common/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 
-export interface GetOrCreateAttributionParams {
+export interface ExistingAttribution {
+  id: string;
+  referralCodeId: string;
+  referrerUserId: string;
+  campaignId: string | null;
+  mainAppInstallLoginAt: Date | null;
+}
+
+export interface ResolveAttributionParams {
   referralCodeId: string;
   referrerUserId: string;
   campaignId: string | null;
@@ -11,47 +19,58 @@ export interface GetOrCreateAttributionParams {
   sourceEventId: string;
 }
 
-export interface ExistingAttribution {
-  id: string;
-  mainAppInstallLoginAt: Date | null;
+export interface AttributionResolution {
+  attribution: ExistingAttribution;
+  /** True when this call created the row (false = an existing first-touch attribution was reused). */
+  created: boolean;
+  /**
+   * True when an existing FIRST-TOUCH attribution was kept instead of the one implied by this
+   * payload (a different link/referrer than the user's original). The attribution never moves.
+   */
+  firstTouchPreserved: boolean;
 }
 
+const ATTRIBUTION_SELECT = {
+  id: true,
+  referralCodeId: true,
+  referrerUserId: true,
+  campaignId: true,
+  mainAppInstallLoginAt: true,
+} as const;
+
 /**
- * Owns the `referral_attributions` row for a (code, referred user) pair.
+ * Owns `referral_attributions` under the LOCKED policy (2026-10-14):
  *
- * The unique constraint intentionally prevents duplicates through the *same* link only —
- * one-vs-multiple-referrer cardinality is an open product decision. Both the Sprint-1
- * verified link events and the Sprint-2 verified main-app events converge here so a
- * (link, user) pair always resolves to a single attribution row, race-safely.
+ *  - First-touch single attribution: one referred user is attributed to exactly one referrer
+ *    for life (`referred_user_id` is unique at the DB level). A referrer may have unlimited
+ *    referred users (1-to-many), but a user is never re-attributed.
+ *  - Self-referral is invalid; callers verify the internal id AND the external (Firebase)
+ *    identity before calling this service.
+ *
+ * All flows (verified link events, main-app lifecycle events) converge here, race-safely.
  */
 @Injectable()
 export class AttributionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findForCodeAndUser(
-    referralCodeId: string,
-    referredUserId: string,
-  ): Promise<ExistingAttribution | null> {
-    return this.prisma.referralAttribution.findUnique({
-      where: { referralCodeId_referredUserId: { referralCodeId, referredUserId } },
-      select: { id: true, mainAppInstallLoginAt: true },
+  async findByReferredUser(referredUserId: string): Promise<ExistingAttribution | null> {
+    return this.prisma.referralAttribution.findFirst({
+      where: { referredUserId },
+      select: ATTRIBUTION_SELECT,
     });
   }
 
-  async getOrCreate(params: GetOrCreateAttributionParams): Promise<string> {
-    const where = {
-      referralCodeId_referredUserId: {
-        referralCodeId: params.referralCodeId,
-        referredUserId: params.referredUserId,
-      },
-    };
-    const existing = await this.prisma.referralAttribution.findUnique({
-      where,
-      select: { id: true },
-    });
+  async getOrCreate(params: ResolveAttributionParams): Promise<AttributionResolution> {
+    // 1) First touch wins — always reused, never replaced.
+    const existing = await this.findByReferredUser(params.referredUserId);
     if (existing) {
-      return existing.id;
+      return {
+        attribution: existing,
+        created: false,
+        firstTouchPreserved: existing.referralCodeId !== params.referralCodeId,
+      };
     }
+
     try {
       const created = await this.prisma.referralAttribution.create({
         data: {
@@ -61,18 +80,19 @@ export class AttributionService {
           campaignId: params.campaignId,
           sourceEventId: params.sourceEventId,
         },
-        select: { id: true },
+        select: ATTRIBUTION_SELECT,
       });
-      return created.id;
+      return { attribution: created, created: true, firstTouchPreserved: false };
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
-        // Another request created the same attribution between our read and write.
-        const raced = await this.prisma.referralAttribution.findUnique({
-          where,
-          select: { id: true },
-        });
+        // A concurrent request created the (single) attribution first — reuse it.
+        const raced = await this.findByReferredUser(params.referredUserId);
         if (raced) {
-          return raced.id;
+          return {
+            attribution: raced,
+            created: false,
+            firstTouchPreserved: raced.referralCodeId !== params.referralCodeId,
+          };
         }
       }
       throw error;

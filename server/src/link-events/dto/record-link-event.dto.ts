@@ -48,17 +48,28 @@ export class VerifiedLinkEventDto {
   @Length(3, 128)
   sourceEventId!: string;
 
-  @ApiProperty({
-    example: '3f7a2f10-9f4e-4d1c-8a2b-6c5e4d3c2b1a',
+  @ApiPropertyOptional({
+    format: 'uuid',
     description:
-      'The referred user this event belongs to. The service links the verified event to the (code, user) attribution, creating a minimal ATTRIBUTED attribution if none exists yet — full install/login verification refines this in Sprint 2.',
+      'The referred user (our UUID). Provide this or `externalUserId`. The event is linked to the user\'s FIRST-TOUCH attribution — never a second referrer.',
   })
+  @IsOptional()
   @IsUUID()
-  referredUserId!: string;
+  referredUserId?: string;
+
+  @ApiPropertyOptional({
+    example: 'firebase-uid-9f3k…',
+    description:
+      'Firebase Auth uid (1:1 with users.external_subject; auto-provisioned on first sight). Provide this or `referredUserId`.',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(2, 128)
+  externalUserId?: string;
 
   @ApiPropertyOptional({
     example: 'andos-main-app',
-    description: 'Origin system identifier (accepted for contract-readiness; not stored in Sprint 1).',
+    description: 'Origin system identifier.',
   })
   @IsOptional()
   @IsString()
@@ -75,7 +86,7 @@ export class VerifiedConversionEventDto extends VerifiedLinkEventDto {
   @ApiPropertyOptional({
     example: 'ORDER_COMPLETED',
     description:
-      'Kind of conversion. Sprint 1 counts the event only — commission amounts, splits and eligibility rules belong to Sprint 3.',
+      'Kind of conversion. Commission amounts are computed from verified order events (`/order-events/verified`), not from this counter.',
   })
   @IsOptional()
   @IsString()

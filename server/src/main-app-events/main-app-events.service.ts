@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, UnprocessableEntityException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ChatAccessState, Prisma } from '@prisma/client';
 import { AttributionService } from '../attribution/attribution.service';
 import { isUniqueConstraintViolation } from '../common/prisma-errors';
+import { IdentityService } from '../identity/identity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeCodeState, normalizePublicCode } from '../referral-codes/referral-code.util';
 import { VerifiedMainAppEventResponseDto } from './dto/main-app-event-response.dto';
@@ -18,35 +19,53 @@ const MAX_SAFE_METADATA_BYTES = 2048;
 type RejectionReason = 'CODE_NOT_FOUND' | 'CODE_INACTIVE' | 'CODE_EXPIRED' | 'SELF_REFERRAL';
 
 /**
- * Sprint 2 — trusted main-app lifecycle events on top of the Sprint-1 attribution.
+ * Sprint 2/3 — trusted main-app lifecycle events.
  *
- *  - Records an auditable `referral_events` row (idempotent per `sourceSystem` + `sourceEventId`).
- *  - `INSTALL_LOGIN` additionally stamps `main_app_install_login_at` (first verification wins)
- *    and flips the referral-chat entitlement `LOCKED → UNLOCKED` on the attribution.
- *  - Never creates a friendship/connection; entitlement is a separate concept.
+ *  - The user is resolved by our UUID or by the Firebase uid (1:1 `users.external_subject`,
+ *    auto-provisioned on first sight); one of the two is required.
+ *  - Events attach to the user's FIRST-TOUCH attribution (locked policy) — a lifecycle fact
+ *    is never lost just because a stale/different link was used, and it never re-attributes.
+ *  - `INSTALL_LOGIN` stamps `main_app_install_login_at` (first verification wins) and flips the
+ *    referral-chat entitlement LOCKED → UNLOCKED. Never creates a friendship/connection.
+ *  - Self-referrals are rejected on the internal id AND the external identity.
  */
 @Injectable()
 export class MainAppEventsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly attribution: AttributionService,
+    private readonly identity: IdentityService,
   ) {}
 
   async recordVerified(dto: VerifiedMainAppEventDto): Promise<VerifiedMainAppEventResponseDto> {
     const code = await this.prisma.referralCode.findFirst({
       where: { publicCode: normalizePublicCode(dto.publicCode) },
-      select: { id: true, isActive: true, expiresAt: true, ownerUserId: true, campaignId: true },
+      select: {
+        id: true,
+        isActive: true,
+        expiresAt: true,
+        ownerUserId: true,
+        campaignId: true,
+        owner: { select: { externalSubject: true } },
+      },
     });
     if (!code) {
       return this.rejected('CODE_NOT_FOUND');
     }
 
-    const referredUser = await this.prisma.user.findUnique({
-      where: { id: dto.referredUserId },
-      select: { id: true },
+    const referredUser = await this.identity.resolveEventUser({
+      referredUserId: dto.referredUserId,
+      externalUserId: dto.externalUserId,
     });
-    if (!referredUser) {
-      throw new UnprocessableEntityException('Unknown referredUserId');
+
+    // Self-referral never counts — internal id and Firebase identity both checked.
+    if (
+      code.ownerUserId === referredUser.id ||
+      (code.owner.externalSubject !== null &&
+        referredUser.externalSubject !== null &&
+        code.owner.externalSubject === referredUser.externalSubject)
+    ) {
+      return this.rejected('SELF_REFERRAL');
     }
 
     if (dto.safeMetadata && JSON.stringify(dto.safeMetadata).length > MAX_SAFE_METADATA_BYTES) {
@@ -55,32 +74,35 @@ export class MainAppEventsService {
       );
     }
 
-    // Self-referral never counts. Policy placeholder: the owner may relax this later, but
-    // nothing is recorded or unlocked for self-referrals today.
-    if (code.ownerUserId === dto.referredUserId) {
-      return this.rejected('SELF_REFERRAL');
-    }
-
-    // Lifecycle events are trusted facts about an EXISTING referral, so an already-attributed
-    // (link, user) pair is honoured even if the link was deactivated/expired afterwards — a
-    // non-ACTIVE code only stops NEW attributions.
-    const existing = await this.attribution.findForCodeAndUser(code.id, dto.referredUserId);
-    if (!existing) {
+    // First-touch wins: attach to the existing attribution when there is one. Only a brand-new
+    // referral needs an ACTIVE link (deactivated/expired links still carry their existing users).
+    const existing = await this.attribution.findByReferredUser(referredUser.id);
+    let attributionId: string;
+    let firstTouchPreserved = false;
+    if (existing) {
+      attributionId = existing.id;
+      firstTouchPreserved = existing.referralCodeId !== code.id;
+    } else {
       const state = computeCodeState(code);
       if (state !== 'ACTIVE') {
         return this.rejected(state === 'EXPIRED' ? 'CODE_EXPIRED' : 'CODE_INACTIVE');
       }
-    }
-
-    const attributionId =
-      existing?.id ??
-      (await this.attribution.getOrCreate({
+      const resolution = await this.attribution.getOrCreate({
         referralCodeId: code.id,
         referrerUserId: code.ownerUserId,
         campaignId: code.campaignId,
-        referredUserId: dto.referredUserId,
+        referredUserId: referredUser.id,
         sourceEventId: dto.sourceEventId,
-      }));
+      });
+      attributionId = resolution.attribution.id;
+      firstTouchPreserved = resolution.firstTouchPreserved;
+    }
+
+    // The referrer whose wallet/entitlement this event belongs to = the first-touch referrer.
+    const attribution = await this.prisma.referralAttribution.findUniqueOrThrow({
+      where: { id: attributionId },
+      select: { id: true, referrerUserId: true },
+    });
 
     const occurredAt = dto.occurredAt ? new Date(dto.occurredAt) : new Date();
     const sourceSystem = dto.sourceSystem ?? DEFAULT_SOURCE_SYSTEM;
@@ -106,7 +128,7 @@ export class MainAppEventsService {
             data: { mainAppInstallLoginAt: occurredAt },
           });
 
-          // Entitlement: create-on-unlock, and only flip when not already unlocked, so the
+          // Entitlement: create-on-unlock, only flip when not already unlocked, so the
           // first unlocking event stays the recorded source.
           const access = await tx.referralChatAccess.findUnique({
             where: { attributionId },
@@ -133,7 +155,7 @@ export class MainAppEventsService {
           }
         }
 
-        const attribution = await tx.referralAttribution.findUnique({
+        const attributionRow = await tx.referralAttribution.findUnique({
           where: { id: attributionId },
           select: { mainAppInstallLoginAt: true },
         });
@@ -143,7 +165,7 @@ export class MainAppEventsService {
         });
         return {
           eventId: event.id,
-          installLoginVerifiedAt: attribution?.mainAppInstallLoginAt ?? null,
+          installLoginVerifiedAt: attributionRow?.mainAppInstallLoginAt ?? null,
           chatAccessState: access?.accessState ?? ChatAccessState.LOCKED,
         };
       });
@@ -153,6 +175,8 @@ export class MainAppEventsService {
         deduplicated: false,
         eventType: dto.eventType,
         attributionId,
+        referrerUserId: attribution.referrerUserId,
+        firstTouchPreserved,
         eventId: outcome.eventId,
         chatAccessState: outcome.chatAccessState,
         installLoginVerifiedAt: outcome.installLoginVerifiedAt

@@ -38,12 +38,23 @@ export class VerifiedMainAppEventDto {
   @Length(3, 128)
   sourceEventId!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     format: 'uuid',
-    description: 'The referred user this event belongs to (must already be provisioned in this service).',
+    description: 'The referred user (our UUID). Provide this or `externalUserId`.',
   })
+  @IsOptional()
   @IsUUID()
-  referredUserId!: string;
+  referredUserId?: string;
+
+  @ApiPropertyOptional({
+    example: 'firebase-uid-9f3k…',
+    description:
+      'Firebase Auth uid (1:1 with users.external_subject; auto-provisioned on first sight). Provide this or `referredUserId`.',
+  })
+  @IsOptional()
+  @IsString()
+  @Length(2, 128)
+  externalUserId?: string;
 
   @ApiPropertyOptional({
     example: 'andos-main-app',

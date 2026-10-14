@@ -76,6 +76,44 @@ trusted main-app `INSTALL_LOGIN` event (install **and** login verified by the ma
 creates a connection/friend. Attribution cardinality, self-referral policy and milestone
 definitions remain owner decisions; current behaviour is the documented safe default.
 
+## API (Sprint 3 — commission, ledger, hold & payouts)
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/order-events/verified` | HMAC | `{ eventType: ORDER_COMPLETED\|ORDER_CANCELLED\|ORDER_REFUNDED, orderId, sourceEventId, publicCode?, referredUserId\|externalUserId, netPaidAmountPaise?, refundAmountPaise?, appliedPromoCode?, occurredAt? }`; `ORDER_COMPLETED` locks `floor(netPaid × rateBps / 10000)` in PENDING for 168 h; cancel/refund posts a compensating reversal; idempotent per `sourceEventId` + one credit per order |
+| GET | `/wallet` | `x-user-id` | balances `pending` (held) · `available` (withdrawable) · `reserved` (pending payouts) · `withdrawn`, as paise decimal strings |
+| GET | `/wallet/ledger` | `x-user-id` | append-only transactions with entries (`?limit&offset`), newest first |
+| POST | `/payout-methods` | `x-user-id` | `{ methodType: UPI\|BANK, providerVaultRef, maskedLabel }` — only a vault reference + masked label are stored, never raw bank/UPI details |
+| GET | `/payout-methods` · POST `/payout-methods/:id` · POST `/payout-methods/:id/deactivate` | `x-user-id` | list / update / deactivate |
+| POST | `/payout-requests` | `x-user-id` | `{ payoutMethodId, amountMinorUnits, idempotencyKey }`; amount > 0 and ≤ AVAILABLE (no min/max); reserves funds atomically; starts `PENDING_APPROVAL` |
+| GET | `/payout-requests[/:id]` · POST `/payout-requests/:id/cancel` | `x-user-id` | own requests; cancel releases the reservation |
+| POST | `/admin/wallet/release-due` | `x-admin-key` | idempotent 168-hour hold sweep: PENDING → AVAILABLE for every eligible order (call from cron/BullMQ) |
+| GET | `/admin/payout-requests` | `x-admin-key` | payout queue (`?status&userId&limit&offset`), oldest first |
+| POST | `/admin/payout-requests/:id/approve` | `x-admin-key` | `PENDING_APPROVAL → APPROVED` (no money moves) |
+| POST | `/admin/payout-requests/:id/reject` | `x-admin-key` | `{ reason }` — releases the reservation to AVAILABLE |
+| POST | `/admin/payout-requests/:id/complete` | `x-admin-key` | `{ paymentUtr }` — required to reach `COMPLETED`; `RESERVED → WITHDRAWN` |
+
+**Locked accounting rules.** Default rate 25% (`DEFAULT_REFERRAL`), promo `TEAMCHX` → 50%
+(`PROMO_TEAMCHX`); both are versioned rows in `reward_rules` (data, never code). Canonical promo =
+trim + remove spaces + uppercase. Commission = `Math.floor((netPaidPaise × rateBps) / 10000)` in
+integer math. The 7-day hold is 168 h from the `ORDER_COMPLETED` timestamp; the sweep is safe to run
+concurrently (per-order idempotency keys + a PENDING balance guard). The ledger is append-only —
+refunds, releases and payouts are new compensating transactions, never edits.
+
+**Attribution policy (locked).** First-touch single attribution: a referred user belongs to exactly
+one referrer for life (`referral_attributions.referred_user_id` is unique); a second referrer's link is
+refused with `ALREADY_ATTRIBUTED`, while lifecycle events still attach to the first-touch attribution
+(`firstTouchPreserved: true`). Self-referral is blocked on the internal id, on the Firebase identity
+and by a DB CHECK.
+
+**Identity mapping (locked).** Main-app webhooks may identify the user by our UUID (`referredUserId`)
+or by the Firebase Auth uid (`externalUserId` → `users.external_subject`, unique, auto-provisioned on
+first sight).
+
+**Admin actor.** Payout decisions require `ADMIN_ACTOR_USER_ID` (a real user row) because
+`reviewed_by_user_id` / `completed_by_user_id` are NOT NULL for APPROVED/REJECTED/COMPLETED; without it
+admin payout endpoints answer 503.
+
 **Main-app integration note:** the main app signs events with the shared webhook secret and
 sends them from its own backend. The stable identity mapping (Firebase `uid` ↔ `users.id`) is an
 owner input; until it lands, `referredUserId` must reference a user provisioned in this service.
