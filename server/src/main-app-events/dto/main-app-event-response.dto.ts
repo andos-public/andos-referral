@@ -24,6 +24,19 @@ export class VerifiedMainAppEventResponseDto {
   @ApiPropertyOptional({ format: 'uuid', description: 'Attribution this event was recorded against.' })
   attributionId?: string;
 
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'First-touch referrer (link owner) this user belongs to — the entitlement beneficiary.',
+  })
+  referrerUserId?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+    description:
+      'True when the payload link is not the user\'s first-touch link: the event was still recorded, but the attribution was NOT moved (single-attribution policy).',
+  })
+  firstTouchPreserved?: boolean;
+
   @ApiPropertyOptional({ format: 'uuid', description: 'Stored referral event id (new records only).' })
   eventId?: string;
 

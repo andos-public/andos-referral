@@ -3,7 +3,7 @@ name: andos-referral-core
 description: "Andos Referral project brain — read this before ANY work in the andos-referral repository: NestJS backend, Prisma schema/migrations, referral links, attribution, commissions, ledger, wallets, payouts, the Flutter mobile app, CI and code reviews. Trigger whenever a task mentions Andos referral, invite links, referral codes, attribution, commission, TEAMCHX, wallet, withdrawal, referral chat, or this repo's server/mobile code — even if the user does not name this skill. Also read before writing any database migration, money math, or auth-touching code."
 ---
 
-# Andos Referral — Core Project Skill (v1)
+# Andos Referral — Core Project Skill (v1.1)
 
 Referral-management + social/chat companion for the Andos main app (ANDOS TP site).
 **Authority order:** the owner's live instruction → this skill → repo READMEs. If code contradicts this
@@ -19,15 +19,33 @@ skill, stop and flag the conflict instead of guessing.
 - **Money:** integer **paise only**, never floats, never strings-with-decimals. Applies to DB, API
   payloads, ledger entries and tests.
 - **Commission base:** the main-app-supplied **net paid** amount on a verified order event.
-- **Reward hold:** **7 days, anchored at `ORDER_COMPLETED`** (owner-decided 13 Oct 2026). Hold
-  exceptions, release-processing mechanics, rounding mode and tax treatment are still open — do not
-  build those parts until the owner specifies.
+- **Rounding (locked):** `commission = Math.floor((netPaidPaise × rateBps) / 10000)` — integer BigInt
+  math, floor, no floating point anywhere. API carries minor units as decimal **strings** (`"5000"`).
+- **Reward hold (locked):** **168 hours (7 days) anchored at the `ORDER_COMPLETED` timestamp**
+  (`occurredAt`). When the window elapses and the order was neither cancelled nor refunded, the held
+  commission is released **PENDING → AVAILABLE** by the idempotent sweep
+  (`POST /v1/admin/wallet/release-due`, called by a cron/BullMQ worker). Partial-refund apportionment
+  and tax treatment remain open.
+- **Refunds/cancellations (locked):** `ORDER_REFUNDED` / `ORDER_CANCELLED` append a
+  `COMMISSION_REVERSAL` entry — from **PENDING** while still held, from **AVAILABLE** after release.
+  The full posted commission is reversed (partial-refund apportionment stays open).
+- **Attribution cardinality (locked): first-touch single attribution.** A referrer may have unlimited
+  referred users (1-to-many), but a referred user is attributed to exactly ONE referrer for life
+  (DB unique on `referred_user_id`). A second referrer's link is refused with `ALREADY_ATTRIBUTED`;
+  lifecycle events keep flowing to the first-touch attribution (`firstTouchPreserved: true`).
+- **Self-referral (locked): strictly blocked** — internal user id AND Firebase identity
+  (`users.external_subject`), plus the DB CHECK `referrer_user_id <> referred_user_id`.
+- **Identity mapping (locked):** the main app identifies users by Firebase Auth uid, mapped 1:1 onto
+  `users.external_subject` (unique). Webhooks accept **either** our UUID (`referredUserId`) **or** the
+  Firebase uid (`externalUserId`); an unseen uid is auto-provisioned (caller is HMAC-verified).
 - **Ledger is append-only.** Corrections/reversals are linked compensating entries with idempotency
   keys. Never UPDATE or DELETE posted ledger rows. `wallet_accounts` is a rebuildable projection,
   never the source of truth.
-- **Withdrawals:** no configured min/max. Request must be positive and ≤ currently available balance;
-  funds are reserved atomically; initial status `PENDING_APPROVAL`; `COMPLETED` requires an admin
-  decision plus a captured payment reference/UTR.
+- **Withdrawals (locked):** no configured min/max. Request must be positive and ≤ currently available
+  balance; funds are reserved **atomically** at request time (wallet row lock) and the status starts
+  `PENDING_APPROVAL`. Admin approve → `APPROVED` (no money moves). Reject/cancel releases the
+  reservation to AVAILABLE. `COMPLETED` needs an admin decision **plus a captured UTR** (DB CHECK
+  enforces the audit columns reviewed_by/completed_by).
 - **Referral ≠ friendship.** Referral-chat access is a separate entitlement (`LOCKED → UNLOCKED` only
   after a trusted main-app install **and** login verification). It never creates a connection/friend.
 - **Privacy:** no raw device/payment/visitor identifiers in referral records. Click visitors are stored
@@ -35,9 +53,9 @@ skill, stop and flag the conflict instead of guessing.
 
 ## 2. Open decisions (never invent — ask the owner)
 
-Attribution cardinality & self-referral policy · hold exceptions/release processing · rounding mode &
-tax treatment · milestone definitions · promo stacking/caps · withdrawal rejection/cancellation fund
-release · production auth provider (main-app token/session exchange) · E2EE protocol/stories details ·
+Partial-refund apportionment · tax treatment of the commission base · click-definition/retention
+(blocks the visitor-hash pepper) · promo stacking/caps · production auth provider (main-app token
+exchange) · E2EE/stories details · payout vault vendor ·
 deployment timing. If a task needs one of these, implement the smallest reversible slice and flag it.
 
 ## 3. Backend conventions (NestJS 11 + Prisma 6 + PostgreSQL 17)
@@ -68,6 +86,18 @@ deployment timing. If a task needs one of these, implement the smallest reversib
 - The link-event CHECK requires `attribution_id` on REFERRAL_ATTRIBUTED/CONVERSION and NULL on CLICK.
 - Migrations: review generated SQL by hand; migration PRs must state which constraints/indexes they
   add or keep. Tables can carry backdating requirements in tests (`expires_at > created_at`).
+- Sprint-3 additions (2026-10-14): unique index `referral_attributions_referred_user_uq`
+  (first-touch single attribution), CHECK `referral_attributions_no_self_referral_chk`, index
+  `referral_order_events_event_type_occurred_at_idx` (hold sweep). Keep all three.
+- Ledger conventions: one `wallet_ledger_transactions` row per money movement, entries carry signed
+  minor units and are never zero. Posting patterns — lock `+PENDING`; release `-PENDING/+AVAILABLE`;
+  reservation `-AVAILABLE/+RESERVED`; rejection/cancel `-RESERVED/+AVAILABLE`; completion
+  `-RESERVED/+WITHDRAWN`; reversal `-PENDING` (held) or `-AVAILABLE` (released). Idempotency keys:
+  `commission-lock|<orderEventId>`, `commission-release|<orderEventId>`,
+  `commission-reversal|<orderEventId>`, `withdrawal-reservation|<requestId>`,
+  `withdrawal-release|<requestEventId>`, `withdrawal-completion|<requestId>`.
+- Admin payout decisions need `ADMIN_ACTOR_USER_ID` (a real user row): the audit columns
+  `reviewed_by_user_id` / `completed_by_user_id` are NOT NULL for APPROVED/REJECTED/COMPLETED.
 
 ## 5. Testing gates (every PR)
 
@@ -79,7 +109,9 @@ deployment timing. If a task needs one of these, implement the smallest reversib
 - Security gates (PR-B onward): `npm audit` + OSV-Scanner + Semgrep (changed files) + CodeQL + gitleaks.
   Triage: CRITICAL blocks the PR; HIGH fixed within the sprint; MEDIUM tracked.
 - For money/ledger work also use: property-based tests (fast-check invariants) and, at sprint end,
-  mutation-testing to prove the tests actually bite.
+  mutation-testing to prove the tests actually bite. `test/ledger-invariants.e2e-spec.ts` asserts
+  projection == rebuilt ledger == pure model for random operation sequences;
+  `src/commission/commission.util.spec.ts` property-tests the money math.
 
 ## 6. Flutter standards (mobile — later phases; keep locked now)
 
@@ -105,11 +137,15 @@ official Flutter/Dart tooling (MCP + official skills).
 ## 8. Phase map
 
 1. **Referral Foundation, Attribution & Ledger** (current) — Sprint 1 Invite Hub ✅ · Sprint 2
-   integration & attribution · Sprint 3 commission + wallet · Sprint 4 hardening/UAT.
+   integration & attribution ✅ · Sprint 3 commission + ledger + hold + payouts ✅ · Sprint 4
+   hardening/UAT next.
 2–5. Connections & notifications · E2EE communication · Stories/profile · Payout ops & admin.
 
 ## 9. Key file pointers
 
 `server/prisma/schema.prisma` · `server/prisma/migrations/**` · `server/src/config/env.validation.ts` ·
 `server/src/auth/*` · `server/src/referral-codes/*` · `server/src/link-events/*` ·
-`server/test/app.e2e-spec.ts` · `.github/workflows/server-ci.yml` · `server/README.md` (endpoint tables).
+`server/src/identity/identity.service.ts` (Firebase uid mapping) · `server/src/commission/*` (money
+math) · `server/src/order-events/*` · `server/src/wallet/*` (ledger, holds, wallet reads) ·
+`server/src/payout-requests/*` · `server/test/sprint3*.e2e-spec.ts` ·
+`server/test/ledger-invariants.e2e-spec.ts` · `.github/workflows/server-ci.yml` · `server/README.md`.

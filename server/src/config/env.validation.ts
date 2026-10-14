@@ -29,6 +29,19 @@ const envSchema = z
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(300),
     THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
 
+    /**
+     * Reward-hold window in hours (locked default 168 = 7 days from ORDER_COMPLETED).
+     * Configurable only so staging/tests can exercise the release mechanics end-to-end.
+     */
+    COMMISSION_HOLD_HOURS: z.coerce.number().int().min(0).default(168),
+
+    /**
+     * Acting admin user for payout decisions (approve/reject/complete). The audit columns
+     * reviewed_by_user_id / completed_by_user_id are NOT NULL for those statuses, so a real
+     * user id must be configured; without it admin payout actions answer 503.
+     */
+    ADMIN_ACTOR_USER_ID: z.string().uuid().optional(),
+
     /** Swagger UI toggle — default OFF (production-safe: the docs map every admin route). */
     DOCS_ENABLED: z
       .enum(['true', 'false'])
