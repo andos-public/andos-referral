@@ -65,6 +65,10 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://referral:referral@127.0.0.1:5432/referral?schema=referral_app
+      # Prisma's datasource declares `directUrl = env("DIRECT_URL")`; `prisma migrate deploy`
+      # resolves migrations through it. Without this the fresh-database migration step fails
+      # before any test runs (fcf3032 CI failure). Locally both URLs point at the same DB.
+      DIRECT_URL: postgresql://referral:referral@127.0.0.1:5432/referral?schema=referral_app
     steps:
       - uses: actions/checkout@v4
 

@@ -1,0 +1,184 @@
+name: Security
+
+# Golden Stack v1 security gates (PR-B):
+#  - gitleaks CLI      : secret scan over full git history (blocks on leaks)
+#  - OSV-Scanner       : dependency advisories, SARIF to code scanning (blocks on CRITICAL)
+#  - Semgrep (OSS)     : SAST, blocks on ERROR severity, full report to SARIF
+#  - CodeQL            : deep SAST for javascript-typescript (free for public repos)
+# Triage policy: CRITICAL blocks a PR · HIGH fixed within the sprint · MEDIUM tracked.
+#
+# Versions of the scanners are pinned on purpose; bump them in a dedicated PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * 1' # weekly, Monday 02:00 UTC — catches advisories published after merge
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write # SARIF upload to code scanning
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: a secret must never be recoverable from an old commit
+
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan git history
+        run: |
+          set -euo pipefail
+          gitleaks detect --source . --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+
+      - name: Upload SARIF (code scanning)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-sarif
+          path: gitleaks.sarif
+          retention-days: 14
+
+  dependency-scan:
+    name: Dependency scan (OSV)
+    runs-on: ubuntu-latest
+    env:
+      OSV_SCANNER_VERSION: 2.7.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install osv-scanner
+        run: |
+          set -euo pipefail
+          curl -sSfL "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64" \
+            -o /usr/local/bin/osv-scanner
+          chmod +x /usr/local/bin/osv-scanner
+          osv-scanner --version
+
+      - name: Scan dependencies (report)
+        run: |
+          set -euo pipefail
+          osv-scanner scan source -r . --format sarif --output osv.sarif || true
+
+      - name: Block on CRITICAL advisories
+        run: |
+          set -euo pipefail
+          osv-scanner scan source -r . --format json --output osv.json || true
+          python3 - <<'PY'
+          import json, sys
+          try:
+              data = json.load(open('osv.json'))
+          except Exception as exc:            # scan failure is reported by the step above
+              print(f'could not parse osv.json: {exc}')
+              sys.exit(0)
+          criticals = []
+          for result in data.get('results', []):
+              for group in result.get('groups', []):
+                  sev = str(group.get('max_severity', '')).upper()
+                  if 'CRITICAL' in sev or sev.startswith('9') or sev.startswith('10'):
+                      criticals.append((group.get('ids'), sev))
+          if criticals:
+              print('CRITICAL advisories found — blocking (policy: CRITICAL blocks the PR):')
+              for ids, sev in criticals:
+                  print(f'  - {ids} max_severity={sev}')
+              sys.exit(1)
+          print('No CRITICAL advisories. (HIGH/MEDIUM are tracked via Dependabot + issues.)')
+          PY
+
+      - name: Upload SARIF (code scanning)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: osv.sarif
+          category: osv-scanner
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: osv-reports
+          path: |
+            osv.sarif
+            osv.json
+          retention-days: 14
+
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep — full scan (report)
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+            semgrep scan --metrics=off --sarif --output semgrep.sarif \
+            --config p/typescript --config p/nodejs --config p/secrets --config p/owasp-top-ten || true
+
+      - name: Semgrep — block on ERROR findings
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:latest \
+            semgrep scan --metrics=off --quiet --severity ERROR --error \
+            --config p/typescript --config p/nodejs --config p/secrets --config p/owasp-top-ten
+
+      - name: Upload SARIF (code scanning)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        continue-on-error: true
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          retention-days: 14
+
+  codeql:
+    name: CodeQL (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript

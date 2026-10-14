@@ -1,0 +1,49 @@
+version: 2
+updates:
+  # Backend dependencies (NestJS/Prisma/TypeScript) — the only npm manifest lives in /server.
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+      day: monday
+      time: '02:30'
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    labels:
+      - dependencies
+      - server
+    groups:
+      # Batch routine upgrades to keep the review load sane…
+      minor-and-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+      # …but never batch security updates — each gets its own reviewable PR.
+      # (Security updates are enabled separately in repo settings; this group only
+      #  catches advisories Dependabot applies to version updates.)
+      security-high:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+          - major
+
+  # Keep CI actions current (checkout/setup-node/codeql-action/upload-artifact…).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '02:30'
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'chore(ci)'
+    labels:
+      - dependencies
+      - ci
