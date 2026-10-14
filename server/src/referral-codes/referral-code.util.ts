@@ -1,4 +1,4 @@
-import { createHash, randomInt } from 'node:crypto';
+import { createHash, createHmac, randomInt } from 'node:crypto';
 
 /** Alphabet excludes visually ambiguous characters (0/O, 1/I) so codes are easy to read and dictate. */
 export const PUBLIC_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -50,8 +50,17 @@ export function buildShareUrl(baseUrl: string, publicCode: string): string {
 }
 
 /** One-way hash; the raw visitor token is never persisted (privacy-minimized click counting). */
-export function hashVisitorToken(visitorToken: string): string {
-  return createHash('sha256').update(visitorToken).digest('hex').slice(0, 32);
+/**
+ * Privacy-preserving visitor fingerprint used only for click dedupe.
+ * With a pepper configured (required in production) this is HMAC-SHA256(pepper, token), so a
+ * leaked database/backup cannot be brute-forced back to device tokens; without a pepper it
+ * falls back to a plain SHA-256 (local development only).
+ */
+export function hashVisitorToken(visitorToken: string, pepper?: string): string {
+  const digest = pepper
+    ? createHmac('sha256', pepper).update(visitorToken).digest('hex')
+    : createHash('sha256').update(visitorToken).digest('hex');
+  return digest.slice(0, 32);
 }
 
 export function bucketStart(occurredAt: Date, windowMs: number = CLICK_DEDUPE_WINDOW_MS): number {

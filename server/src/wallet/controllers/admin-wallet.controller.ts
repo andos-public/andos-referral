@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOkResponse, ApiOperation, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { AdminActor, AdminActorContext } from '../../audit/admin-actor.decorator';
+import { AuditLogService } from '../../audit/audit-log.service';
 import { AdminAuthGuard } from '../../auth/admin-auth.guard';
 import { HoldsService, ReleaseSweepResult } from '../holds.service';
 
@@ -26,7 +28,10 @@ class ReleaseSweepDto {
 @UseGuards(AdminAuthGuard)
 @Controller('admin/wallet')
 export class AdminWalletController {
-  constructor(private readonly holds: HoldsService) {}
+  constructor(
+    private readonly holds: HoldsService,
+    private readonly auditLogs: AuditLogService,
+  ) {}
 
   @Post('release-due')
   @HttpCode(HttpStatus.OK)
@@ -36,7 +41,25 @@ export class AdminWalletController {
       'Moves PENDING → AVAILABLE for every ORDER_COMPLETED event older than the hold window that was neither reversed nor released yet. Idempotent; returns scan/release counters.',
   })
   @ApiOkResponse({ description: 'Sweep result counters' })
-  releaseDue(@Body() dto: ReleaseSweepDto): Promise<ReleaseSweepResult> {
-    return this.holds.sweep(dto.limit ?? 200);
+  async releaseDue(
+    @Body() dto: ReleaseSweepDto,
+    @AdminActor() actor: AdminActorContext,
+  ): Promise<ReleaseSweepResult> {
+    const result = await this.holds.sweep(dto.limit ?? 200);
+    await this.auditLogs.record({
+      actorType: 'ADMIN_KEY',
+      actorRef: actor.ref,
+      action: 'wallet.release_due',
+      targetType: 'wallet_sweep',
+      requestId: actor.requestId,
+      metadata: {
+        cutoff: result.cutoff,
+        scanned: result.scanned,
+        released: result.released,
+        skipped: result.skipped,
+        failed: result.failed,
+      },
+    });
+    return result;
   }
 }

@@ -3,6 +3,7 @@ import { ChatAccessState, Prisma } from '@prisma/client';
 import { AttributionService } from '../attribution/attribution.service';
 import { isUniqueConstraintViolation } from '../common/prisma-errors';
 import { IdentityService } from '../identity/identity.service';
+import { MetricsService } from '../observability/metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeCodeState, normalizePublicCode } from '../referral-codes/referral-code.util';
 import { VerifiedMainAppEventResponseDto } from './dto/main-app-event-response.dto';
@@ -35,6 +36,7 @@ export class MainAppEventsService {
     private readonly prisma: PrismaService,
     private readonly attribution: AttributionService,
     private readonly identity: IdentityService,
+    private readonly metrics: MetricsService,
   ) {}
 
   async recordVerified(dto: VerifiedMainAppEventDto): Promise<VerifiedMainAppEventResponseDto> {
@@ -170,6 +172,7 @@ export class MainAppEventsService {
         };
       });
 
+      this.metrics.recordMainAppEvent(dto.eventType, 'recorded');
       return {
         recorded: true,
         deduplicated: false,
@@ -186,6 +189,7 @@ export class MainAppEventsService {
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
         // Same (sourceSystem, sourceEventId) already stored — safe to ignore.
+        this.metrics.recordMainAppEvent(dto.eventType, 'deduplicated');
         return {
           recorded: false,
           deduplicated: true,
@@ -198,6 +202,7 @@ export class MainAppEventsService {
   }
 
   private rejected(reason: RejectionReason): VerifiedMainAppEventResponseDto {
+    this.metrics.recordMainAppEvent('UNKNOWN', `rejected:${reason}`);
     return { recorded: false, deduplicated: false, reason };
   }
 }

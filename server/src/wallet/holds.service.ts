@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { OrderEventType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DEFAULT_COMMISSION_HOLD_HOURS } from '../order-events/order-events.service';
+import { MetricsService } from '../observability/metrics.service';
 import { LedgerService, ledgerKeys } from './ledger.service';
 
 export interface ReleaseSweepResult {
@@ -29,6 +30,7 @@ export class HoldsService {
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
     private readonly config: ConfigService,
+    private readonly metrics: MetricsService,
   ) {}
 
   async sweep(limit = 200): Promise<ReleaseSweepResult> {
@@ -57,6 +59,7 @@ export class HoldsService {
       failed: 0,
     };
     if (candidates.length === 0) {
+      this.metrics.recordHoldSweep(result);
       return result;
     }
 
@@ -114,6 +117,7 @@ export class HoldsService {
           result.skipped += 1;
         } else {
           result.released += 1;
+          this.metrics.recordCommissionReleased(commission);
         }
       } catch (error) {
         // A concurrent reversal (cancel/refund) or sweep won the race — that is not an error.
@@ -126,6 +130,7 @@ export class HoldsService {
       }
     }
 
+    this.metrics.recordHoldSweep(result);
     return result;
   }
 }

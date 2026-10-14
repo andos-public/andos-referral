@@ -46,4 +46,48 @@ describe('validateEnv', () => {
       validateEnv({ ...base, NODE_ENV: 'production', ADMIN_API_KEY: 'super-secret-key' }),
     ).toThrowError(/MAIN_APP_WEBHOOK_SECRET/);
   });
+
+  // ── Sprint 4 hardening rules ──────────────────────────────────────────────
+  const prodBase = {
+    ...base,
+    NODE_ENV: 'production',
+    ADMIN_API_KEY: 'super-secret-key',
+    MAIN_APP_WEBHOOK_SECRET: 'super-secret-webhook',
+  };
+
+  it('defaults the replay-defence knobs', () => {
+    const env = validateEnv({ ...base });
+    expect(env.WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS).toBe(300);
+    expect(env.WEBHOOK_REQUIRE_TIMESTAMP).toBe(false);
+    expect(env.TRUST_PROXY).toBe('false');
+    expect(env.REQUEST_LOG_ENABLED).toBe(true);
+  });
+
+  it('coerces the timestamp tolerance and rejects nonsense values', () => {
+    expect(validateEnv({ ...base, WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS: '60' }).WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS).toBe(60);
+    expect(() => validateEnv({ ...base, WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS: '0' })).toThrowError(
+      /WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS/,
+    );
+  });
+
+  it('refuses a missing pepper or body-only signatures in production', () => {
+    expect(() => validateEnv({ ...prodBase, WEBHOOK_REQUIRE_TIMESTAMP: 'true' })).toThrowError(/VISITOR_HASH_PEPPER/);
+    expect(() => validateEnv({ ...prodBase, VISITOR_HASH_PEPPER: 'sixteen-chars-min' })).toThrowError(
+      /WEBHOOK_REQUIRE_TIMESTAMP/,
+    );
+  });
+
+  it('accepts a fully hardened production environment', () => {
+    const env = validateEnv({
+      ...prodBase,
+      WEBHOOK_REQUIRE_TIMESTAMP: 'true',
+      VISITOR_HASH_PEPPER: 'sixteen-chars-min',
+    });
+    expect(env.WEBHOOK_REQUIRE_TIMESTAMP).toBe(true);
+    expect(env.VISITOR_HASH_PEPPER).toBe('sixteen-chars-min');
+  });
+
+  it('rejects a pepper shorter than 16 characters', () => {
+    expect(() => validateEnv({ ...base, VISITOR_HASH_PEPPER: 'short' })).toThrowError(/VISITOR_HASH_PEPPER/);
+  });
 });
