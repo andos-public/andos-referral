@@ -57,6 +57,29 @@ Base path `/v1`. Full interactive docs: `GET /docs` (Swagger).
 | GET | `/admin/referral-codes/:id` | `x-admin-key` | single link with owner info |
 | GET | `/admin/referral-codes/summary` | `x-admin-key` | link-state counts + metric totals |
 
+## API (Sprint 2 — integration & attribution)
+
+| Method | Path | Auth | Notes |
+|---|---|---|---|
+| POST | `/main-app-events/verified` | HMAC | `{ eventType: SIGNUP \| INSTALL_LOGIN, publicCode, referredUserId, sourceEventId, occurredAt?, sourceSystem?, safeMetadata? }`; idempotent per `sourceEventId`; `INSTALL_LOGIN` stamps the verified install/login and unlocks referral chat; self-referral → `SELF_REFERRAL`; lifecycle events are honoured after the link is deactivated (only *new* attributions require an ACTIVE code); `safeMetadata` ≤ 2048 bytes |
+| GET | `/referrals` | `x-user-id` | my referrals (as referrer), newest first; `?chatState=LOCKED\|UNLOCKED&status&limit&offset`; milestone projection per item |
+| GET | `/referrals/:id` | `x-user-id` | participants only (referrer or referred user); foreign/unknown → 404; includes verified event timeline + `viewerRole` |
+| GET | `/referrals/:id/chat-access` | `x-user-id` | entitlement `LOCKED → UNLOCKED`; a missing row means LOCKED |
+| GET | `/admin/referrals` | `x-admin-key` | cross-referrer list; `?referrerUserId&chatState&status&limit&offset` |
+
+**Milestones** are a read-only projection: `ATTRIBUTED` (link attribution exists) → `SIGNED_UP`
+(first verified `SIGNUP`) → `INSTALL_LOGIN_VERIFIED` (first trusted `INSTALL_LOGIN`) →
+`CHAT_UNLOCKED` (entitlement transition; first unlocking event is kept).
+
+**Entitlement vs friendship:** referral-chat access is its own concept. It unlocks only from a
+trusted main-app `INSTALL_LOGIN` event (install **and** login verified by the main app) and never
+creates a connection/friend. Attribution cardinality, self-referral policy and milestone
+definitions remain owner decisions; current behaviour is the documented safe default.
+
+**Main-app integration note:** the main app signs events with the shared webhook secret and
+sends them from its own backend. The stable identity mapping (Firebase `uid` ↔ `users.id`) is an
+owner input; until it lands, `referredUserId` must reference a user provisioned in this service.
+
 ### Identity (temporary, Phase 1)
 
 `x-user-id: <uuid>` is trusted by `UserAuthGuard` and the user must exist and be ACTIVE.

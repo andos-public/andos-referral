@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
+import { AttributionModule } from '../attribution/attribution.module';
 import { AuthModule } from '../auth/auth.module';
 import { LinkEventsController } from './controllers/link-events.controller';
 import { VerifiedLinkEventsController } from './controllers/verified-link-events.controller';
 import { LinkEventsService } from './link-events.service';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AttributionModule],
   controllers: [LinkEventsController, VerifiedLinkEventsController],
   providers: [LinkEventsService],
   exports: [LinkEventsService],

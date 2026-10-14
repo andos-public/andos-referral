@@ -2,11 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AttributionModule } from './attribution/attribution.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { LinkEventsModule } from './link-events/link-events.module';
+import { MainAppEventsModule } from './main-app-events/main-app-events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReferralCodesModule } from './referral-codes/referral-codes.module';
+import { ReferralsModule } from './referrals/referrals.module';
 
 @Module({
   imports: [
@@ -30,8 +33,11 @@ import { ReferralCodesModule } from './referral-codes/referral-codes.module';
     }),
     PrismaModule,
     HealthModule,
+    AttributionModule,
     ReferralCodesModule,
     LinkEventsModule,
+    MainAppEventsModule,
+    ReferralsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

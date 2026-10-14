@@ -1,6 +1,7 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { LinkEventType } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { AttributionService } from '../attribution/attribution.service';
 import { isUniqueConstraintViolation } from '../common/prisma-errors';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -32,7 +33,10 @@ type VerifiedEventType = typeof LinkEventType.REFERRAL_ATTRIBUTED | typeof LinkE
  */
 @Injectable()
 export class LinkEventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attribution: AttributionService,
+  ) {}
 
   async recordClick(dto: RecordLinkEventDto): Promise<RecordedLinkEventResponseDto> {
     const code = await this.prisma.referralCode.findFirst({
@@ -127,15 +131,15 @@ export class LinkEventsService {
     const dedupeKey = buildVerifiedEventDedupeKey(eventType, code.id, dto.sourceEventId);
 
     // The link-event CHECK constraint requires attribution_id on referral/conversion events.
-    // Sprint 1 therefore get-or-creates a minimal ATTRIBUTED attribution; Sprint 2 layers the
-    // full signed install/login verification, campaign resolution and chat entitlement on top.
-    const attributionId = await this.getOrCreateAttribution(
-      code.id,
-      code.ownerUserId,
-      code.campaignId,
-      dto.referredUserId,
-      dto.sourceEventId,
-    );
+    // Attribution resolution is shared with the Sprint-2 verified main-app events, so both
+    // flows converge on one attribution row per (link, referred user).
+    const attributionId = await this.attribution.getOrCreate({
+      referralCodeId: code.id,
+      referrerUserId: code.ownerUserId,
+      campaignId: code.campaignId,
+      referredUserId: dto.referredUserId,
+      sourceEventId: dto.sourceEventId,
+    });
 
     try {
       await this.prisma.$transaction(async (tx) => {
@@ -169,51 +173,6 @@ export class LinkEventsService {
     } catch (error) {
       if (isUniqueConstraintViolation(error)) {
         return { recorded: false, deduplicated: true };
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Attribution for (code, referred user); race-safe. The unique constraint intentionally
-   * only prevents duplicates through the same link — one-vs-multiple-referrer policy is open.
-   */
-  private async getOrCreateAttribution(
-    referralCodeId: string,
-    referrerUserId: string,
-    campaignId: string | null,
-    referredUserId: string,
-    sourceEventId: string,
-  ): Promise<string> {
-    const where = { referralCodeId_referredUserId: { referralCodeId, referredUserId } };
-    const existing = await this.prisma.referralAttribution.findUnique({
-      where,
-      select: { id: true },
-    });
-    if (existing) {
-      return existing.id;
-    }
-    try {
-      const created = await this.prisma.referralAttribution.create({
-        data: {
-          referralCodeId,
-          referrerUserId,
-          referredUserId,
-          campaignId,
-          sourceEventId,
-        },
-        select: { id: true },
-      });
-      return created.id;
-    } catch (error) {
-      if (isUniqueConstraintViolation(error)) {
-        const raced = await this.prisma.referralAttribution.findUnique({
-          where,
-          select: { id: true },
-        });
-        if (raced) {
-          return raced.id;
-        }
       }
       throw error;
     }

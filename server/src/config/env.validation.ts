@@ -28,6 +28,15 @@ const envSchema = z
     /** Global request throttle (public routes may override, e.g. the click endpoint). */
     THROTTLE_LIMIT: z.coerce.number().int().positive().default(300),
     THROTTLE_TTL_MS: z.coerce.number().int().positive().default(60_000),
+
+    /** Swagger UI toggle — default OFF (production-safe: the docs map every admin route). */
+    DOCS_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+
+    /** Exact browser origins allowed to call the API (comma-separated). Empty = CORS disabled. */
+    CORS_ALLOWED_ORIGINS: z.string().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV === 'production') {
