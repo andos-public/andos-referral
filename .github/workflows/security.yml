@@ -34,7 +34,7 @@ jobs:
     env:
       GITLEAKS_VERSION: 8.30.1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history: a secret must never be recoverable from an old commit
 
@@ -72,7 +72,7 @@ jobs:
     env:
       OSV_SCANNER_VERSION: 2.7.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install osv-scanner
         run: |
@@ -134,7 +134,7 @@ jobs:
     name: SAST (Semgrep)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Semgrep — full scan (report)
         run: |
@@ -170,7 +170,7 @@ jobs:
     name: CodeQL (SAST)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
