@@ -6,7 +6,8 @@
 ## Read order
 1. `.claude/skills/andos-referral-core/SKILL.md` — the project brain (business rules, conventions, gates).
 2. `server/README.md` — endpoint tables, testing, conventions.
-3. Task-specific code under `server/src/`.
+3. `docs/AGENT_TOOLING.md` — tooling layers, enforced security gates, triage policy, review log.
+4. Task-specific code under `server/src/`.
 
 ## Non-negotiables (short version)
 - Money = integer paise. Never floats.
