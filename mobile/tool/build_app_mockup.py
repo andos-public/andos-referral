@@ -162,8 +162,8 @@ def chat(col: dict) -> Image.Image:
     c.rrect(16, y, W - 32, 190, 20, fill=col["surface"], outline=col["border"])
     c.icon("nav_chat", 40, col["dim"], W / 2 - 20, y + 34)
     c.text(W / 2, y + 92, "No conversations yet", 15, 700, col["text"], anchor="ma")
-    c.text(W / 2, y + 114, "Invite a friend from the Referrals tab —", 11.5, 500, col["dim"], anchor="ma")
-    c.text(W / 2, y + 130, "the chat appears here once they join.", 11.5, 500, col["dim"], anchor="ma")
+    c.text(W / 2, y + 114, "A thread appears here as soon as a friend's", 11.5, 500, col["dim"], anchor="ma")
+    c.text(W / 2, y + 130, "install + login is verified.", 11.5, 500, col["dim"], anchor="ma")
 
     # an example row, so the owner sees how a live thread will look
     y2 = y + 210

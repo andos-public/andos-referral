@@ -108,7 +108,7 @@ class _EmptyChats extends StatelessWidget {
             Text('No conversations yet', style: AppTypography.bodyStrong(15, colors.textPrimary)),
             const SizedBox(height: 4),
             Text(
-              'Invite a friend from the Referrals tab — the chat appears here once they join.',
+              "A thread appears here as soon as a friend's install + login is verified.",
               textAlign: TextAlign.center,
               style: AppTypography.caption(12, colors.textTertiary),
             ),
