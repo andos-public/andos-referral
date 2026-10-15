@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 10+ wraps edge-to-edge bars in a contrast scrim by default. The
+         design puts real (frosted) content there, so the scrim is turned off. -->
+    <style name="LaunchTheme" parent="@style/LaunchTheme">
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+    <style name="NormalTheme" parent="@style/NormalTheme">
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>

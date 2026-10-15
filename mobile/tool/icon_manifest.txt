@@ -1,0 +1,85 @@
+# Icon manifest — the exact set the app asks for.
+# Columns: icon_id | used_in (where it appears) | status
+# Author each icon on a 24x24 viewBox. Stroke icons: 1.6 px stroke, round caps/joins.
+# Filled icons are fine too — mark 'fill' in the SVG (fill="currentColor").
+# Drop the file as assets/icons_src/<icon_id>.svg, then run: python3 tool/generate_icons.py
+#
+nav_invite | Invite Hub tab | PENDING
+nav_referrals | Referrals tab | PENDING
+nav_chat | Chat tab | PENDING
+nav_wallet | Wallet tab | PENDING
+nav_settings | Settings tab | PENDING
+chevron_right | list row affordance | PENDING
+chevron_left | back / previous | PENDING
+chevron_down | expand / dropdown | PENDING
+close | dismiss sheet / dialog | PENDING
+search | search field + search action | PENDING
+filter | filter chips / filter sheet | PENDING
+sort | sort menu | PENDING
+more | overflow menu | PENDING
+add | create link / add action | PENDING
+check | success tick, selected state | PENDING
+refresh | pull-to-refresh affordance, retry | PENDING
+link | referral link row | PENDING
+qr_code | show QR for a link | PENDING
+share | share sheet | PENDING
+copy | copy code/link | PENDING
+gift | rewards / bonus | PENDING
+sparkles | premium AI-ish accent (rewards banner) | PENDING
+eye | preview link as visitor | PENDING
+cursor_tap | clicks metric | PENDING
+chart_bars | conversion analytics | PENDING
+calendar_clock | hold release date (7-day hold) | PENDING
+users | referrals list | PENDING
+user_plus | new signup attribution | PENDING
+user_check | verified signup / install verified | PENDING
+network | referral graph / wide network | PENDING
+flag_milestone | milestone rail marker | PENDING
+chat_locked | chat gate LOCKED | PENDING
+chat_unlocked | chat gate UNLOCKED | PENDING
+clock_pending | commission PENDING bucket | PENDING
+message | chat list row / message action | PENDING
+send | send message button | PENDING
+attach | attach file | PENDING
+camera | camera capture | PENDING
+gallery | pick from gallery | PENDING
+mic | voice note | PENDING
+emoji | emoji picker | PENDING
+reply | reply to message | PENDING
+pin | pinned message | PENDING
+trash | delete message/thread | PENDING
+block | block user | PENDING
+wallet | wallet tab + balance card | PENDING
+rupee | INR money amounts | PENDING
+arrow_down_left | money in (commission credited) | PENDING
+arrow_up_right | money out (withdrawal) | PENDING
+plus_circle | add payout method | PENDING
+bank | bank transfer method | PENDING
+card | card / UPI method | PENDING
+receipt | payout receipt / UTR row | PENDING
+download | export ledger / statement | PENDING
+lock | locked funds / reserved bucket | PENDING
+unlock | released / available | PENDING
+hourglass | 7-day hold waiting | PENDING
+rotate_ccw | refund / reversal row | PENDING
+badge_check | verified payout completed | PENDING
+trending_up | earnings trend | PENDING
+alert_triangle | warning (hold, at-risk) | PENDING
+alert_circle | error state | PENDING
+info | info banner | PENDING
+x_circle | failed transaction | PENDING
+check_circle | success state | PENDING
+inbox_empty | empty state illustration (lists) | PENDING
+wifi_off | offline banner | PENDING
+user | profile settings row | PENDING
+bell | notifications | PENDING
+moon | dark theme option | PENDING
+sun | light theme option | PENDING
+globe | system theme / language | PENDING
+shield_check | security settings row | PENDING
+file_text | legal documents row | PENDING
+help_circle | help & support row | PENDING
+star | rate app / featured | PENDING
+log_out | sign out | PENDING
+key | API/keys, PIN change | PENDING
+fingerprint | biometric lock setting | PENDING

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors AppColors.dark.bgBase (#0B1020). -->
+    <color name="andos_bg">#0B1020</color>
+    <color name="andos_status_bar_icon_bg">#00000000</color>
+</resources>

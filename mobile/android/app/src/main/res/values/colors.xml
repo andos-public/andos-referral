@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors AppColors.light.bgBase / brand in Dart; keep in sync by hand. -->
+    <color name="andos_bg">#F6F7FB</color>
+    <color name="andos_status_bar_icon_bg">#00000000</color>
+</resources>

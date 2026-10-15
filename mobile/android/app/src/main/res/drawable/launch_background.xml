@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch window: brand background only, so the first frame blends straight
+     into the Flutter UI (no white flash before the app is drawn). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/andos_bg" />
+</layer-list>
