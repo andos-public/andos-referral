@@ -20,12 +20,12 @@ class AppShell extends ConsumerWidget {
   /// Provided by GoRouter; keeps every branch's state alive.
   final StatefulNavigationShell navigationShell;
 
+  /// Four tabs, in branch order. Chat is home; settings live inside Profile.
   static const List<FloatingNavItem> items = <FloatingNavItem>[
-    FloatingNavItem(icon: AppIcons.navInvite, label: 'Invite'),
-    FloatingNavItem(icon: AppIcons.navReferrals, label: 'Referrals'),
     FloatingNavItem(icon: AppIcons.navChat, label: 'Chat'),
+    FloatingNavItem(icon: AppIcons.navReferrals, label: 'Referrals'),
     FloatingNavItem(icon: AppIcons.navWallet, label: 'Wallet'),
-    FloatingNavItem(icon: AppIcons.navSettings, label: 'Settings'),
+    FloatingNavItem(icon: AppIcons.navProfile, label: 'Profile'),
   ];
 
   @override
@@ -59,11 +59,10 @@ class AppShell extends ConsumerWidget {
   /// Branch index → route name, used by callers that want to deep-link into the
   /// shell (e.g. a notification tap opening Wallet).
   static String routeForBranch(int index) => switch (index) {
-        0 => AppRoutes.inviteName,
+        0 => AppRoutes.chatName,
         1 => AppRoutes.referralsName,
-        2 => AppRoutes.chatName,
-        3 => AppRoutes.walletName,
-        _ => AppRoutes.settingsName,
+        2 => AppRoutes.walletName,
+        _ => AppRoutes.profileName,
       };
 }
 

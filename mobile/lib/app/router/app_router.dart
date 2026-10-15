@@ -3,22 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/chat/presentation/chat_screen.dart';
-import '../../features/invite/presentation/invite_hub_screen.dart';
+import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/referrals/presentation/referrals_screen.dart';
-import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/wallet/presentation/wallet_screen.dart';
 import '../shell/app_shell.dart';
 import 'app_routes.dart';
 
 /// Router — one `StatefulShellRoute` with a branch per bottom-nav destination.
 ///
-/// * Each branch keeps its own Navigator, so pushing Chat → thread and then
-///   switching tabs preserves the thread when you come back.
-/// * The shell (glass nav bar + page transitions) lives in [AppShell].
-/// * Detail routes are already declared so deep links resolve as screens land.
+/// Four tabs, in nav order:
+///   `/chat` (home) · `/referrals` (network + invite hub) · `/wallet` · `/profile`
+///
+/// * Each branch keeps its own Navigator, so opening a chat thread and coming
+///   back to it after switching tabs preserves the thread.
+/// * Settings are **not** a tab — they live inside `/profile`.
+/// * `/r/<code>` (the main app's share link) lands on the Referrals tab with the
+///   code prefilled.
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: AppRoutes.invitePath,
+    initialLocation: AppRoutes.chatPath,
     debugLogDiagnostics: false,
     routes: <RouteBase>[
       // ── Public deep link: /r/<code> ────────────────────────────────────────
@@ -27,8 +30,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: AppRoutes.deepLinkName,
         redirect: (context, state) {
           final code = state.pathParameters['code'] ?? '';
-          // Phase-2: hand the code to the invite hub (prefill + preview).
-          return '${AppRoutes.invitePath}?code=$code';
+          return '${AppRoutes.referralsPath}?code=$code';
         },
       ),
 
@@ -36,38 +38,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShell(navigationShell: navigationShell),
         branches: <StatefulShellBranch>[
-          StatefulShellBranch(
-            routes: <RouteBase>[
-              GoRoute(
-                path: AppRoutes.invitePath,
-                name: AppRoutes.inviteName,
-                builder: (context, state) => InviteHubScreen(initialCode: state.uri.queryParameters['code']),
-                routes: <RouteBase>[
-                  GoRoute(
-                    path: ':id',
-                    name: AppRoutes.linkDetailName,
-                    builder: (context, state) => InviteHubScreen(linkId: state.pathParameters['id']),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: <RouteBase>[
-              GoRoute(
-                path: AppRoutes.referralsPath,
-                name: AppRoutes.referralsName,
-                builder: (context, state) => const ReferralsScreen(),
-                routes: <RouteBase>[
-                  GoRoute(
-                    path: ':id',
-                    name: AppRoutes.referralDetailName,
-                    builder: (context, state) => ReferralDetailPlaceholder(id: state.pathParameters['id']!),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          // 0 · Chat — the home tab.
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
@@ -84,6 +55,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // 1 · Referrals — invite hub + network progress in one place.
+          StatefulShellBranch(
+            routes: <RouteBase>[
+              GoRoute(
+                path: AppRoutes.referralsPath,
+                name: AppRoutes.referralsName,
+                builder: (context, state) =>
+                    ReferralsScreen(initialCode: state.uri.queryParameters['code']),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: ':id',
+                    name: AppRoutes.referralDetailName,
+                    builder: (context, state) => ReferralDetailPlaceholder(id: state.pathParameters['id']!),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // 2 · Wallet — earnings & payouts.
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
@@ -110,12 +100,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // 3 · Profile — profile, stats and settings.
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
-                path: AppRoutes.settingsPath,
-                name: AppRoutes.settingsName,
-                builder: (context, state) => const SettingsScreen(),
+                path: AppRoutes.profilePath,
+                name: AppRoutes.profileName,
+                builder: (context, state) => const ProfileScreen(),
+                routes: <RouteBase>[
+                  GoRoute(
+                    path: 'security',
+                    name: AppRoutes.securityName,
+                    builder: (context, state) =>
+                        const _PlaceholderPage(title: 'Security', subtitle: 'Biometric lock & sessions'),
+                  ),
+                  GoRoute(
+                    path: 'withdrawals',
+                    name: AppRoutes.withdrawalHistoryName,
+                    builder: (context, state) =>
+                        const _PlaceholderPage(title: 'Withdrawals', subtitle: 'Past payout requests'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -124,7 +129,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
     errorBuilder: (context, state) => _RouteErrorScreen(
       location: state.uri.toString(),
-      onHome: () => context.goNamed(AppRoutes.inviteName),
+      onHome: () => context.goNamed(AppRoutes.chatName),
     ),
   );
 });
@@ -153,21 +158,24 @@ class WithdrawPlaceholder extends StatelessWidget {
   const WithdrawPlaceholder({super.key});
 
   @override
-  Widget build(BuildContext context) => const _PlaceholderPage(title: 'Withdraw', subtitle: 'Payout request flow');
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(title: 'Withdraw', subtitle: 'Payout request flow');
 }
 
 class LedgerPlaceholder extends StatelessWidget {
   const LedgerPlaceholder({super.key});
 
   @override
-  Widget build(BuildContext context) => const _PlaceholderPage(title: 'Ledger', subtitle: 'Append-only history');
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(title: 'Ledger', subtitle: 'Append-only history');
 }
 
 class PayoutMethodsPlaceholder extends StatelessWidget {
   const PayoutMethodsPlaceholder({super.key});
 
   @override
-  Widget build(BuildContext context) => const _PlaceholderPage(title: 'Payout methods', subtitle: 'Vault reference + masked label');
+  Widget build(BuildContext context) =>
+      const _PlaceholderPage(title: 'Payout methods', subtitle: 'Vault reference + masked label');
 }
 
 class _PlaceholderPage extends StatelessWidget {
@@ -202,7 +210,7 @@ class _RouteErrorScreen extends StatelessWidget {
           children: [
             Text('Route not found: $location'),
             const SizedBox(height: 12),
-            FilledButton(onPressed: onHome, child: const Text('Back to Invite Hub')),
+            FilledButton(onPressed: onHome, child: const Text('Back to Chat')),
           ],
         ),
       ),

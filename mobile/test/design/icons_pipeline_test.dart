@@ -5,6 +5,7 @@ import 'package:andos_referral/core/cache/app_database.dart';
 import 'package:andos_referral/core/haptics/app_haptics.dart';
 import 'package:andos_referral/core/providers/app_providers.dart';
 import 'package:andos_referral/design/icons/app_icon.dart';
+import 'package:andos_referral/design/widgets/floating_bottom_nav.dart';
 import 'package:andos_referral/design/icons/app_icons.dart';
 import 'package:andos_referral/design/icons/app_icons_registry.dart';
 import 'package:andos_referral/design/icons/svg_path_parser.dart';
@@ -102,7 +103,7 @@ void main() {
     testWidgets('AppIcon paints the dashed placeholder when the bundle lacks an id', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Center(child: AppIcon(AppIcons.wallet, size: 32)),
+          home: Center(child: AppIcon(AppIcons.navWallet, size: 32)),
         ),
       );
       expect(tester.takeException(), isNull);
@@ -125,8 +126,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(Icon), findsNothing, reason: 'a generic icon leaked into the Invite Hub');
 
-      for (final tab in ['Referrals', 'Chat', 'Wallet', 'Settings']) {
-        await tester.tap(find.text(tab));
+      for (final tab in ['Referrals', 'Wallet', 'Profile']) {
+        await tester.tap(find.descendant(
+          of: find.byType(FloatingBottomNav),
+          matching: find.text(tab),
+        ));
         await tester.pumpAndSettle();
         expect(find.byType(Icon), findsNothing, reason: 'a generic icon leaked into the $tab tab');
       }
@@ -144,7 +148,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      for (final label in ['Invite', 'Referrals', 'Chat', 'Wallet', 'Settings']) {
+      for (final label in ['Chat', 'Referrals', 'Wallet', 'Profile']) {
         expect(
           find.bySemanticsLabel(RegExp(label, caseSensitive: false)),
           findsWidgets,

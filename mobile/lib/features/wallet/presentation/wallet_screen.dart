@@ -13,9 +13,9 @@ class WalletScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return const EdgeToEdgeScaffold(
       title: 'Wallet',
-      subtitle: 'Pending · Available · Withdrawn',
+      subtitle: 'Available · 7-day hold · Withdrawn · Ledger',
       body: PhaseNotice(
-        icon: AppIcons.wallet,
+        icon: AppIcons.navWallet,
         title: 'Wallet screen lands next',
         body:
             'The ledger, the four buckets and the withdrawal flow are already served by the backend. '

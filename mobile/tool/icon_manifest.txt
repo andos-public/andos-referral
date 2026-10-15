@@ -1,85 +1,80 @@
-# Icon manifest — the exact set the app asks for.
-# Columns: icon_id | used_in (where it appears) | status
-# Author each icon on a 24x24 viewBox. Stroke icons: 1.6 px stroke, round caps/joins.
-# Filled icons are fine too — mark 'fill' in the SVG (fill="currentColor").
+# Icon manifest — the CORE set for the 4-tab flow.
+# Columns: icon_id | used_in | status
+# Author on a 24x24 viewBox. Stroke icons: 1.6 px, round caps/joins.
 # Drop the file as assets/icons_src/<icon_id>.svg, then run: python3 tool/generate_icons.py
 #
-nav_invite | Invite Hub tab | PENDING
-nav_referrals | Referrals tab | PENDING
-nav_chat | Chat tab | PENDING
-nav_wallet | Wallet tab | PENDING
-nav_settings | Settings tab | PENDING
-chevron_right | list row affordance | PENDING
-chevron_left | back / previous | PENDING
-chevron_down | expand / dropdown | PENDING
-close | dismiss sheet / dialog | PENDING
-search | search field + search action | PENDING
-filter | filter chips / filter sheet | PENDING
-sort | sort menu | PENDING
-more | overflow menu | PENDING
-add | create link / add action | PENDING
-check | success tick, selected state | PENDING
-refresh | pull-to-refresh affordance, retry | PENDING
-link | referral link row | PENDING
-qr_code | show QR for a link | PENDING
-share | share sheet | PENDING
-copy | copy code/link | PENDING
-gift | rewards / bonus | PENDING
-sparkles | premium AI-ish accent (rewards banner) | PENDING
-eye | preview link as visitor | PENDING
-cursor_tap | clicks metric | PENDING
-chart_bars | conversion analytics | PENDING
-calendar_clock | hold release date (7-day hold) | PENDING
-users | referrals list | PENDING
-user_plus | new signup attribution | PENDING
-user_check | verified signup / install verified | PENDING
-network | referral graph / wide network | PENDING
-flag_milestone | milestone rail marker | PENDING
-chat_locked | chat gate LOCKED | PENDING
-chat_unlocked | chat gate UNLOCKED | PENDING
-clock_pending | commission PENDING bucket | PENDING
-message | chat list row / message action | PENDING
-send | send message button | PENDING
-attach | attach file | PENDING
-camera | camera capture | PENDING
-gallery | pick from gallery | PENDING
-mic | voice note | PENDING
-emoji | emoji picker | PENDING
-reply | reply to message | PENDING
-pin | pinned message | PENDING
-trash | delete message/thread | PENDING
-block | block user | PENDING
-wallet | wallet tab + balance card | PENDING
-rupee | INR money amounts | PENDING
-arrow_down_left | money in (commission credited) | PENDING
-arrow_up_right | money out (withdrawal) | PENDING
-plus_circle | add payout method | PENDING
-bank | bank transfer method | PENDING
-card | card / UPI method | PENDING
-receipt | payout receipt / UTR row | PENDING
-download | export ledger / statement | PENDING
-lock | locked funds / reserved bucket | PENDING
-unlock | released / available | PENDING
-hourglass | 7-day hold waiting | PENDING
-rotate_ccw | refund / reversal row | PENDING
-badge_check | verified payout completed | PENDING
-trending_up | earnings trend | PENDING
-alert_triangle | warning (hold, at-risk) | PENDING
-alert_circle | error state | PENDING
-info | info banner | PENDING
-x_circle | failed transaction | PENDING
-check_circle | success state | PENDING
-inbox_empty | empty state illustration (lists) | PENDING
-wifi_off | offline banner | PENDING
-user | profile settings row | PENDING
-bell | notifications | PENDING
-moon | dark theme option | PENDING
-sun | light theme option | PENDING
-globe | system theme / language | PENDING
-shield_check | security settings row | PENDING
-file_text | legal documents row | PENDING
-help_circle | help & support row | PENDING
-star | rate app / featured | PENDING
-log_out | sign out | PENDING
-key | API/keys, PIN change | PENDING
-fingerprint | biometric lock setting | PENDING
+# ── nav ──
+nav_chat | Chat tab (home) + chat list rows | COMPILED
+nav_referrals | Referrals tab + friends list | COMPILED
+nav_wallet | Wallet tab + wallet headers | COMPILED
+nav_profile | Profile tab + profile header | COMPILED
+#
+# ── chrome ──
+chevron_right | list row affordance | COMPILED
+chevron_left | back / previous | COMPILED
+close | dismiss sheet / dialog | COMPILED
+search | search field + search action | COMPILED
+filter | filter chips / ledger filter | COMPILED
+more | overflow menu | COMPILED
+add | create link / add action | COMPILED
+check | success tick, selected state | COMPILED
+refresh | retry / pull to refresh | COMPILED
+#
+# ── network & invite ──
+link | referral link row | COMPILED
+qr_code | show QR for a link | COMPILED
+share | share sheet | COMPILED
+copy | copy code / link | COMPILED
+gift | rewards / bonus | COMPILED
+cursor_tap | clicks metric | COMPILED
+chart_bars | conversion analytics | COMPILED
+user_plus | new signup attributed | COMPILED
+user_check | install + login verified | COMPILED
+network | network / referral graph | COMPILED
+flag_milestone | milestone rail marker | COMPILED
+chat_locked | chat gate LOCKED | COMPILED
+chat_unlocked | chat gate UNLOCKED | COMPILED
+#
+# ── chat ──
+send | send message | COMPILED
+attach | attach file / photo | COMPILED
+mic | voice note | COMPILED
+emoji | emoji picker | COMPILED
+reply | reply to message | COMPILED
+pin | pinned message | COMPILED
+trash | delete message / thread | COMPILED
+block | block user | COMPILED
+#
+# ── wallet ──
+rupee | INR amounts | COMPILED
+arrow_down_left | money in | COMPILED
+arrow_up_right | money out / withdraw | COMPILED
+plus_circle | add payout method | COMPILED
+bank | bank transfer method | COMPILED
+card | UPI / card method | COMPILED
+receipt | ledger + payout receipt | COMPILED
+lock | funds on hold | COMPILED
+hourglass | 7-day hold waiting | COMPILED
+rotate_ccw | refund / reversal row | COMPILED
+badge_check | payout completed with UTR | COMPILED
+trending_up | earnings trend | COMPILED
+#
+# ── status ──
+alert_triangle | warning | COMPILED
+info | info banner | COMPILED
+x_circle | failed transaction | COMPILED
+check_circle | success state | COMPILED
+inbox_empty | empty state | COMPILED
+wifi_off | offline banner | COMPILED
+#
+# ── profile & settings ──
+bell | notifications | COMPILED
+moon | dark theme | COMPILED
+sun | light theme | COMPILED
+shield_check | security | COMPILED
+file_text | legal documents | COMPILED
+help_circle | help & support | COMPILED
+log_out | sign out | COMPILED
+fingerprint | biometric lock | COMPILED
+theme_auto | system theme (half sun / half moon) | COMPILED
+#

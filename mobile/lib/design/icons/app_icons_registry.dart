@@ -22,26 +22,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'alert_circle': AppIconData(
-    name: 'alert_circle',
-    duotone: true,
-    paths: [
-      AppIconPathSpec(
-        d: 'M3.5999999999999996 12.0A8.4 8.4 0 1 0 20.4 12.0A8.4 8.4 0 1 0 3.5999999999999996 12.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M12 7.6v5.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M11.05 16.2A0.95 0.95 0 1 0 12.95 16.2A0.95 0.95 0 1 0 11.05 16.2Z',
-        paint: AppIconPaint.fill,
-      ),
-    ],
-  ),
   'alert_triangle': AppIconData(
     name: 'alert_triangle',
     duotone: true,
@@ -177,56 +157,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'calendar_clock': AppIconData(
-    name: 'calendar_clock',
-    duotone: true,
-    paths: [
-      AppIconPathSpec(
-        d: 'M5.199999999999999 6.0H10.999999999999998A2.4 2.4 0 0 1 13.399999999999999 8.4V15.999999999999998A2.4 2.4 0 0 1 10.999999999999998 18.4H5.199999999999999A2.4 2.4 0 0 1 2.8 15.999999999999998V8.4A2.4 2.4 0 0 1 5.199999999999999 6.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M2.8 10h10.6M5.6 3.8v3.6M10.6 3.8v3.6',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M5.0 13.6A0.9 0.9 0 1 0 6.800000000000001 13.6A0.9 0.9 0 1 0 5.0 13.6Z',
-        paint: AppIconPaint.fill,
-      ),
-      AppIconPathSpec(
-        d: 'M13.600000000000001 15.2A4.2 4.2 0 1 0 22.0 15.2A4.2 4.2 0 1 0 13.600000000000001 15.2Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M17.8 13.2v2.3l1.7 1.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'camera': AppIconData(
-    name: 'camera',
-    paths: [
-      AppIconPathSpec(
-        d: 'M6.4 6.6H17.6A3.4 3.4 0 0 1 21.0 10.0V16.200000000000003A3.4 3.4 0 0 1 17.6 19.6H6.4A3.4 3.4 0 0 1 3.0 16.200000000000003V10.0A3.4 3.4 0 0 1 6.4 6.6Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M8.6 13.1A3.4 3.4 0 1 0 15.4 13.1A3.4 3.4 0 1 0 8.6 13.1Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M8.6 6.6 9.9 4.3h4.2l1.3 2.3',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
   'card': AppIconData(
     name: 'card',
     paths: [
@@ -251,17 +181,17 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
     name: 'chart_bars',
     paths: [
       AppIconPathSpec(
-        d: 'M6.5 12.8H7.1A1.5 1.5 0 0 1 8.6 14.3V18.1A1.5 1.5 0 0 1 7.1 19.6H6.5A1.5 1.5 0 0 1 5.0 18.1V14.3A1.5 1.5 0 0 1 6.5 12.8Z',
+        d: 'M6.0 13.2H7.200000000000001A1.6 1.6 0 0 1 8.8 14.799999999999999V18.0A1.6 1.6 0 0 1 7.200000000000001 19.6H6.0A1.6 1.6 0 0 1 4.4 18.0V14.799999999999999A1.6 1.6 0 0 1 6.0 13.2Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
       AppIconPathSpec(
-        d: 'M11.7 8.6H12.299999999999999A1.5 1.5 0 0 1 13.799999999999999 10.1V18.1A1.5 1.5 0 0 1 12.299999999999999 19.6H11.7A1.5 1.5 0 0 1 10.2 18.1V10.1A1.5 1.5 0 0 1 11.7 8.6Z',
+        d: 'M11.4 9.2H12.600000000000001A1.6 1.6 0 0 1 14.200000000000001 10.799999999999999V18.0A1.6 1.6 0 0 1 12.600000000000001 19.6H11.4A1.6 1.6 0 0 1 9.8 18.0V10.799999999999999A1.6 1.6 0 0 1 11.4 9.2Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
       AppIconPathSpec(
-        d: 'M16.9 4.4H17.5A1.5 1.5 0 0 1 19.0 5.9V18.1A1.5 1.5 0 0 1 17.5 19.6H16.9A1.5 1.5 0 0 1 15.4 18.1V5.9A1.5 1.5 0 0 1 16.9 4.4Z',
+        d: 'M16.8 5.2H18.0A1.6 1.6 0 0 1 19.6 6.800000000000001V18.0A1.6 1.6 0 0 1 18.0 19.6H16.8A1.6 1.6 0 0 1 15.2 18.0V6.800000000000001A1.6 1.6 0 0 1 16.8 5.2Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -332,16 +262,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'chevron_down': AppIconData(
-    name: 'chevron_down',
-    paths: [
-      AppIconPathSpec(
-        d: 'M5.6 9.4 12 15.2 18.4 9.4',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
   'chevron_left': AppIconData(
     name: 'chevron_left',
     paths: [
@@ -357,21 +277,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
     paths: [
       AppIconPathSpec(
         d: 'M9.6 5.6 15.4 12 9.6 18.4',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'clock_pending': AppIconData(
-    name: 'clock_pending',
-    paths: [
-      AppIconPathSpec(
-        d: 'M3.8000000000000007 12.0A8.2 8.2 0 1 0 20.2 12.0A8.2 8.2 0 1 0 3.8000000000000007 12.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M12 7.4V12l3.3 2.2',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -407,31 +312,11 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
     duotone: true,
     paths: [
       AppIconPathSpec(
-        d: 'M6.6 4.8 15.8 11.2 11.6 12.2 9.6 16.4z',
+        d: 'M6.2 4.2 16.4 11.6 11.7 12.7 9.5 17.4z',
         paint: AppIconPaint.fill,
       ),
       AppIconPathSpec(
-        d: 'M13.6 3.6v2.4M18.4 5.6l-1.7 1.7M20.4 10.2h-2.4',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'download': AppIconData(
-    name: 'download',
-    paths: [
-      AppIconPathSpec(
-        d: 'M12 4.2v10.6',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M7.8 10.6 12 14.8 16.2 10.6',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M4.6 15.4v2.4a2.4 2.4 0 0 0 2.4 2.4h10a2.4 2.4 0 0 0 2.4-2.4v-2.4',
+        d: 'M14.4 3.6v2.6M19.8 8.6h-2.6',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -456,21 +341,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
       AppIconPathSpec(
         d: 'M8.7 14.3a4.4 4.4 0 0 0 6.6 0',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'eye': AppIconData(
-    name: 'eye',
-    paths: [
-      AppIconPathSpec(
-        d: 'M2.8 12C5.2 7.9 8.4 5.9 12 5.9s6.8 2 9.2 6.1c-2.4 4.1-5.6 6.1-9.2 6.1S5.2 16.1 2.8 12z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M9.2 12.0A2.8 2.8 0 1 0 14.8 12.0A2.8 2.8 0 1 0 9.2 12.0Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -556,26 +426,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'gallery': AppIconData(
-    name: 'gallery',
-    paths: [
-      AppIconPathSpec(
-        d: 'M6.0 4.6H18.0A3.0 3.0 0 0 1 21.0 7.6V16.4A3.0 3.0 0 0 1 18.0 19.4H6.0A3.0 3.0 0 0 1 3.0 16.4V7.6A3.0 3.0 0 0 1 6.0 4.6Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M6.6000000000000005 9.4A1.8 1.8 0 1 0 10.200000000000001 9.4A1.8 1.8 0 1 0 6.6000000000000005 9.4Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M4.4 17.7 8.9 13.2l3.1 3.1 3.3-3.3 4.3 4.3',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
   'gift': AppIconData(
     name: 'gift',
     paths: [
@@ -601,26 +451,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
       AppIconPathSpec(
         d: 'M12 8.3c.8-2.4 2.1-3.6 3.4-3.6a1.85 1.85 0 0 1 0 3.7H12',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'globe': AppIconData(
-    name: 'globe',
-    paths: [
-      AppIconPathSpec(
-        d: 'M3.5999999999999996 12.0A8.4 8.4 0 1 0 20.4 12.0A8.4 8.4 0 1 0 3.5999999999999996 12.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M8.1 12.0A3.9 8.4 0 1 0 15.9 12.0A3.9 8.4 0 1 0 8.1 12.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M3.6 12h16.8',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -706,26 +536,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'key': AppIconData(
-    name: 'key',
-    paths: [
-      AppIconPathSpec(
-        d: 'M5.0 15.4A3.6 3.6 0 1 0 12.2 15.4A3.6 3.6 0 1 0 5.0 15.4Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M11.2 12.8 19.8 4.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M17.4 6.6l2.1 2.1M15.4 8.6l2.1 2.1',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
   'link': AppIconData(
     name: 'link',
     paths: [
@@ -781,21 +591,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
       AppIconPathSpec(
         d: 'M9.4 12h9.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'message': AppIconData(
-    name: 'message',
-    paths: [
-      AppIconPathSpec(
-        d: 'M4.4 11.6V7.9a3.5 3.5 0 0 1 3.5-3.5h8.2a3.5 3.5 0 0 1 3.5 3.5v3.7a3.5 3.5 0 0 1-3.5 3.5h-4.3L7.9 18.7v-3.6a3.5 3.5 0 0 1-3.5-3.5Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M8.6 8.9h6.8M8.6 12.1h4.2',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -871,21 +666,16 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'nav_invite': AppIconData(
-    name: 'nav_invite',
+  'nav_profile': AppIconData(
+    name: 'nav_profile',
     paths: [
       AppIconPathSpec(
-        d: 'M5.9 8.2A3.1 3.1 0 1 0 12.1 8.2A3.1 3.1 0 1 0 5.9 8.2Z',
+        d: 'M8.1 8.2A3.9 3.9 0 1 0 15.9 8.2A3.9 3.9 0 1 0 8.1 8.2Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
       AppIconPathSpec(
-        d: 'M3.4 19.6c0-3.05 2.5-5.5 5.6-5.5s5.6 2.45 5.6 5.5',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M17.6 6.4v5.2M15 9h5.2',
+        d: 'M4.6 20.2c0-4.1 3.3-6.9 7.4-6.9s7.4 2.8 7.4 6.9',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -911,31 +701,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
       AppIconPathSpec(
         d: 'M17.4 14.4c2.2.6 3.8 2.5 3.8 5.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'nav_settings': AppIconData(
-    name: 'nav_settings',
-    paths: [
-      AppIconPathSpec(
-        d: 'M4.6 12.0A7.4 7.4 0 1 0 19.4 12.0A7.4 7.4 0 1 0 4.6 12.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M9.2 12.0A2.8 2.8 0 1 0 14.8 12.0A2.8 2.8 0 1 0 9.2 12.0Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M19.4 12h2.2M12 19.4v2.2M4.6 12H2.4M12 4.6V2.4',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M17.23 17.23l1.56 1.56M6.77 6.77L5.21 5.21M17.23 6.77l1.56-1.56M6.77 17.23l-1.56 1.56',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
@@ -1031,39 +796,46 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
     duotone: true,
     paths: [
       AppIconPathSpec(
-        d: 'M5.0 3.4H8.200000000000001A1.6 1.6 0 0 1 9.8 5.0V8.200000000000001A1.6 1.6 0 0 1 8.200000000000001 9.8H5.0A1.6 1.6 0 0 1 3.4 8.200000000000001V5.0A1.6 1.6 0 0 1 5.0 3.4Z',
+        d: 'M5.3 3.6H8.100000000000001A1.7 1.7 0 0 1 9.8 5.3V8.100000000000001A1.7 1.7 0 0 1 8.100000000000001 9.8H5.3A1.7 1.7 0 0 1 3.6 8.100000000000001V5.3A1.7 1.7 0 0 1 5.3 3.6Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
       AppIconPathSpec(
-        d: 'M5.7 5.7H7.5V7.5H5.7Z',
+        d: 'M6.1 5.6H7.3A0.5 0.5 0 0 1 7.8 6.1V7.3A0.5 0.5 0 0 1 7.3 7.8H6.1A0.5 0.5 0 0 1 5.6 7.3V6.1A0.5 0.5 0 0 1 6.1 5.6Z',
         paint: AppIconPaint.fill,
       ),
       AppIconPathSpec(
-        d: 'M15.799999999999999 3.4H19.0A1.6 1.6 0 0 1 20.6 5.0V8.200000000000001A1.6 1.6 0 0 1 19.0 9.8H15.799999999999999A1.6 1.6 0 0 1 14.2 8.200000000000001V5.0A1.6 1.6 0 0 1 15.799999999999999 3.4Z',
+        d: 'M15.899999999999999 3.6H18.7A1.7 1.7 0 0 1 20.4 5.3V8.100000000000001A1.7 1.7 0 0 1 18.7 9.8H15.899999999999999A1.7 1.7 0 0 1 14.2 8.100000000000001V5.3A1.7 1.7 0 0 1 15.899999999999999 3.6Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
       AppIconPathSpec(
-        d: 'M16.5 5.7H18.3V7.5H16.5Z',
+        d: 'M16.7 5.6H17.9A0.5 0.5 0 0 1 18.4 6.1V7.3A0.5 0.5 0 0 1 17.9 7.8H16.7A0.5 0.5 0 0 1 16.2 7.3V6.1A0.5 0.5 0 0 1 16.7 5.6Z',
         paint: AppIconPaint.fill,
       ),
       AppIconPathSpec(
-        d: 'M5.0 14.2H8.200000000000001A1.6 1.6 0 0 1 9.8 15.799999999999999V19.0A1.6 1.6 0 0 1 8.200000000000001 20.6H5.0A1.6 1.6 0 0 1 3.4 19.0V15.799999999999999A1.6 1.6 0 0 1 5.0 14.2Z',
+        d: 'M5.3 14.2H8.100000000000001A1.7 1.7 0 0 1 9.8 15.899999999999999V18.7A1.7 1.7 0 0 1 8.100000000000001 20.4H5.3A1.7 1.7 0 0 1 3.6 18.7V15.899999999999999A1.7 1.7 0 0 1 5.3 14.2Z',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
       ),
       AppIconPathSpec(
-        d: 'M5.7 16.5H7.5V18.3H5.7Z',
+        d: 'M6.1 16.2H7.3A0.5 0.5 0 0 1 7.8 16.7V17.9A0.5 0.5 0 0 1 7.3 18.4H6.1A0.5 0.5 0 0 1 5.6 17.9V16.7A0.5 0.5 0 0 1 6.1 16.2Z',
         paint: AppIconPaint.fill,
       ),
       AppIconPathSpec(
-        d: 'M14.2 14.4h2.6v2.6M14.2 17.8h2.4v2.6',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
+        d: 'M14.899999999999999 14.2H15.899999999999999A0.7 0.7 0 0 1 16.599999999999998 14.899999999999999V15.899999999999999A0.7 0.7 0 0 1 15.899999999999999 16.599999999999998H14.899999999999999A0.7 0.7 0 0 1 14.2 15.899999999999999V14.899999999999999A0.7 0.7 0 0 1 14.899999999999999 14.2Z',
+        paint: AppIconPaint.fill,
       ),
       AppIconPathSpec(
-        d: 'M18.299999999999997 19.4A1.1 1.1 0 1 0 20.5 19.4A1.1 1.1 0 1 0 18.299999999999997 19.4Z',
+        d: 'M18.9 14.2H19.9A0.7 0.7 0 0 1 20.599999999999998 14.899999999999999V15.899999999999999A0.7 0.7 0 0 1 19.9 16.599999999999998H18.9A0.7 0.7 0 0 1 18.2 15.899999999999999V14.899999999999999A0.7 0.7 0 0 1 18.9 14.2Z',
+        paint: AppIconPaint.fill,
+      ),
+      AppIconPathSpec(
+        d: 'M14.899999999999999 18.2H15.899999999999999A0.7 0.7 0 0 1 16.599999999999998 18.9V19.9A0.7 0.7 0 0 1 15.899999999999999 20.599999999999998H14.899999999999999A0.7 0.7 0 0 1 14.2 19.9V18.9A0.7 0.7 0 0 1 14.899999999999999 18.2Z',
+        paint: AppIconPaint.fill,
+      ),
+      AppIconPathSpec(
+        d: 'M18.2 19.4A1.2 1.2 0 1 0 20.599999999999998 19.4A1.2 1.2 0 1 0 18.2 19.4Z',
         paint: AppIconPaint.fill,
       ),
     ],
@@ -1218,46 +990,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'sort': AppIconData(
-    name: 'sort',
-    paths: [
-      AppIconPathSpec(
-        d: 'M7.2 4.8v14.4M4 15.9l3.2 3.2 3.2-3.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M16.8 19.2V4.8M13.6 8.1 16.8 4.9 20 8.1',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'sparkles': AppIconData(
-    name: 'sparkles',
-    paths: [
-      AppIconPathSpec(
-        d: 'M10.8 5.6c0 4.2 3.4 7.6 7.6 7.6-4.2 0-7.6 3.4-7.6 7.6 0-4.2-3.4-7.6-7.6-7.64.2 0 7.6-3.4 7.6-7.6z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M18.9 2.3c.12 1.2.9 1.98 2.1 2.1-1.2.12-1.98.9-2.1 2.1-.12-1.2-.9-1.98-2.1-2.11.2-.12 1.98-.9 2.1-2.1z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'star': AppIconData(
-    name: 'star',
-    paths: [
-      AppIconPathSpec(
-        d: 'M12 4 14.29 9.24 19.99 9.8 15.71 13.61 16.94 19.19 12 16.3 7.06 19.198.29 13.61 4.01 9.8 9.71 9.24z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
   'sun': AppIconData(
     name: 'sun',
     paths: [
@@ -1275,6 +1007,21 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
         d: 'M16.67 16.67l1.41 1.41M7.33 7.33 5.92 5.92M16.67 7.33l1.41-1.41M7.33 16.67l-1.41 1.41',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
+      ),
+    ],
+  ),
+  'theme_auto': AppIconData(
+    name: 'theme_auto',
+    duotone: true,
+    paths: [
+      AppIconPathSpec(
+        d: 'M3.8000000000000007 12.0A8.2 8.2 0 1 0 20.2 12.0A8.2 8.2 0 1 0 3.8000000000000007 12.0Z',
+        paint: AppIconPaint.stroke,
+        strokeWidth: 1.6,
+      ),
+      AppIconPathSpec(
+        d: 'M12 3.8a8.2 8.2 0 0 1 0 16.4z',
+        paint: AppIconPaint.fill,
       ),
     ],
   ),
@@ -1318,41 +1065,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
       ),
     ],
   ),
-  'unlock': AppIconData(
-    name: 'unlock',
-    duotone: true,
-    paths: [
-      AppIconPathSpec(
-        d: 'M7.199999999999999 10.4H16.799999999999997A2.6 2.6 0 0 1 19.4 13.0V17.4A2.6 2.6 0 0 1 16.799999999999997 20.0H7.199999999999999A2.6 2.6 0 0 1 4.6 17.4V13.0A2.6 2.6 0 0 1 7.199999999999999 10.4Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M8.4 10.4V7.6a3.4 3.4 0 0 1 5.8-2.4',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M10.7 15.2A1.3 1.3 0 1 0 13.3 15.2A1.3 1.3 0 1 0 10.7 15.2Z',
-        paint: AppIconPaint.fill,
-      ),
-    ],
-  ),
-  'user': AppIconData(
-    name: 'user',
-    paths: [
-      AppIconPathSpec(
-        d: 'M8.1 8.2A3.9 3.9 0 1 0 15.9 8.2A3.9 3.9 0 1 0 8.1 8.2Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M4.6 20.2c0-4.1 3.3-6.9 7.4-6.9s7.4 2.8 7.4 6.9',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
   'user_check': AppIconData(
     name: 'user_check',
     paths: [
@@ -1390,46 +1102,6 @@ const Map<String, AppIconData> kGeneratedIcons = <String, AppIconData>{
         d: 'M18.2 8.2v5M15.7 10.7h5',
         paint: AppIconPaint.stroke,
         strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'users': AppIconData(
-    name: 'users',
-    paths: [
-      AppIconPathSpec(
-        d: 'M5.2 8.4A3.2 3.2 0 1 0 11.600000000000001 8.4A3.2 3.2 0 1 0 5.2 8.4Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M2.6 19.6c0-3.2 2.6-5.8 5.8-5.8s5.8 2.6 5.8 5.8',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M15.2 7.4h6M15.2 11.2h6M15.2 15h4.2',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-    ],
-  ),
-  'wallet': AppIconData(
-    name: 'wallet',
-    duotone: true,
-    paths: [
-      AppIconPathSpec(
-        d: 'M5.6 6.8h13.2a3.2 3.2 0 0 1 3.2 3.2v6a3.2 3.2 0 0 1-3.2 3.2H5.6A3.2 3.2 0 0 1 2.4 16v-6a3.2 3.2 0 0 1 3.2-3.2Z',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M21.6 10.4h-4.6a2.6 2.6 0 0 0 0 5.2h4.6',
-        paint: AppIconPaint.stroke,
-        strokeWidth: 1.6,
-      ),
-      AppIconPathSpec(
-        d: 'M16.05 13.0A1.15 1.15 0 1 0 18.349999999999998 13.0A1.15 1.15 0 1 0 16.05 13.0Z',
-        paint: AppIconPaint.fill,
       ),
     ],
   ),

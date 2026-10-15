@@ -32,10 +32,11 @@ LINE = "#E5E7EB"
 SVG_OPEN = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
             'stroke="currentColor" stroke-width="1.6" stroke-linecap="round" '
             'stroke-linejoin="round"')
-GROUPS = ["nav", "chrome", "invite hub", "referrals", "chat", "wallet", "status", "settings"]
-TITLES = {"nav": "Navigation (bottom bar)", "chrome": "Chrome (basic actions)",
-          "invite hub": "Invite Hub", "referrals": "Referrals", "chat": "Chat",
-          "wallet": "Wallet", "status": "Status / alerts", "settings": "Settings"}
+GROUPS = ["nav", "chrome", "network & invite", "chat", "wallet", "status", "profile & settings"]
+TITLES = {"nav": "Navigation — the 4 bottom-bar tabs", "chrome": "Chrome — basic actions",
+          "network & invite": "Network & invite — Referrals tab",
+          "chat": "Chat — conversations", "wallet": "Wallet — money",
+          "status": "Status / alerts", "profile & settings": "Profile & settings"}
 
 
 def icon_svg(icon_id: str, size: int) -> str:
@@ -121,11 +122,12 @@ def build_html() -> str:
   .use {{ font-size:10.5px; color:{MUTED}; margin-top:3px; }}
 </style></head>
 <body><div class="wrap">
-  <h1>ANDOS Referral — icon set v1 ({len(groups)} icons)</h1>
-  <p class="sub">Ye saare icons hain jo app me use honge. White background warna, taaki sab saaf dikhein.</p>
+  <h1>ANDOS Referral — CORE icon set ({len(groups)} icons · 4-tab app)</h1>
+  <p class="sub">Ye poora set hai jo 4-tab app me use hota hai — Chat · Referrals · Wallet · Profile.
+     White background, taaki har icon saaf dikhe.</p>
   <div class="how">Kaise feedback dein: jo icon pasand na aaye uska <b>naam</b> likh dein (ya naya SVG bhej dein) —
     baaki sab main update kar dunga. Har icon 2 tarah ka hota hai: <b>bada</b> aur chhote size
-    (22/18/14 px) — chhote size me bhi saaf dikhna chahiye.</div>
+    (22/18/14 px) — chhote size me bhi saaf dikhna chahiye. Settings alag tab nahi hain — wo Profile ke andar hain.</div>
   {''.join(sections)}
 </div></body></html>
 '''
